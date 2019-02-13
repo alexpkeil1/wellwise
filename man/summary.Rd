@@ -12,6 +12,9 @@
 
 \item{...}{ipsum}
 }
+\value{
+a 'bgfsimres' object
+}
 \description{
 lorem ipsum
 }

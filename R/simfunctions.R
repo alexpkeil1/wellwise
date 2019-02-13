@@ -264,6 +264,7 @@ summary.bgfsimmodlist <- function(
   object=NULL,
   ...
   ){
+#' @name summary
 #' @title lorem ipsum
 #' 
 #' @description lorem ipsum
@@ -272,10 +273,10 @@ summary.bgfsimmodlist <- function(
 #' @param object ipsum
 #' @param ... ipsum
 #' @import rstan
-#' @name summary
 #' @method summary bgfsimmodlist
 #' @importFrom stats sd quantile
 #' @export
+#' @return a 'bgfsimres' object
 #' @examples
 #' runif(1)
   # summarize
@@ -302,6 +303,7 @@ summary.bgfsimmodlist <- function(
 }
 
 print.bgfsimres <- function(x, ...){
+#' @name print
 #' @title lorem ipsum
 #' 
 #' @description lorem ipsum
@@ -310,7 +312,6 @@ print.bgfsimres <- function(x, ...){
 #' @param x ipsum
 #' @param ... ipsum
 #' @export
-#' @name print
 #' @method print bgfsimres
 #' @examples
 #' runif(1)
@@ -318,6 +319,7 @@ print.bgfsimres <- function(x, ...){
 }
 
 plot.bgfsimres <- function(x, ...){
+#' @name plot
 #' @title lorem ipsum
 #' 
 #' @description lorem ipsum
@@ -326,7 +328,6 @@ plot.bgfsimres <- function(x, ...){
 #' @param x ipsum
 #' @param ... ipsum
 #' @importFrom stats density
-#' @name plot
 #' @method plot bgfsimres
 #' @export
 #' @examples
