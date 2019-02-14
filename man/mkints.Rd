@@ -4,12 +4,14 @@
 \alias{mkints}
 \title{lorem ipsum}
 \usage{
-mkints(terms, intvars)
+mkints(terms, intvars, binvars)
 }
 \arguments{
 \item{terms}{ipsum}
 
 \item{intvars}{ipsum}
+
+\item{binvars}{binary variables (character vector) which are excluded to avoid meaningless self-interactions}
 }
 \description{
 lorem ipsum

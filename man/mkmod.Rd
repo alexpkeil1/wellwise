@@ -4,7 +4,7 @@
 \alias{mkmod}
 \title{lorem ipsum}
 \usage{
-mkmod(coef, terms, start = 1)
+mkmod(coef, terms, start = 1, catmod = FALSE)
 }
 \arguments{
 \item{coef}{ipsum}

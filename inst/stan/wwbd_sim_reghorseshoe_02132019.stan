@@ -23,10 +23,16 @@ parameters{
   real mu_b;
   real mu_i;
   real b0; // given uniform prior
+  real<lower=0> iCsq;
 }
 transformed parameters{
   vector[p] beta;
-  beta = tau * lambda .* b_;
+  {
+   vector[p] lambda_t;
+   real Csq = 1/iCsq;
+   lambda_t = sqrt(Csq * lambda .* lambda ./ ( Csq + tau * lambda .* lambda ));
+   beta = tau * lambda_t .* b_;
+  }
 }
 model{
 {
@@ -35,9 +41,14 @@ model{
   sig_b ~ cauchy(0, 1);
   sig_i ~ cauchy(0, .5);
   b_ ~ normal(0, 1);
-  // horseshoe priors
-  tau ~ cauchy(0, 1);
-  lambda ~ cauchy(0, 1);
+  // horseshoe priors (not pure if using nu <> 1)
+  {
+    real nu = 1;
+    tau ~ student_t(1., 0, 1);
+    lambda ~ student_t(1., 0, 1);
+  }
+  // regulazation factor prior
+  iCsq ~ gamma(1, 1); // translates to student_t with 2 d.f. for coefs far from zero
   
   mu = b0 + beta[1]*Arsenic + beta[2]*Manganese + beta[3]*Lead + beta[4]*Cadmium + beta[5]*Copper +
        beta[6]*Arsenic .* Arsenic + beta[7]*Arsenic .* Manganese + beta[8]*Arsenic .* Lead + beta[9]*Arsenic .* Cadmium +

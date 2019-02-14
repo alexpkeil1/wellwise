@@ -28,7 +28,7 @@ sortstring <- function(s){
 }  
   
 #create interaction terms
-mkints <- function(terms, intvars){
+mkints <- function(terms, intvars, binvars){
 #' @title lorem ipsum
 #' 
 #' @description lorem ipsum
@@ -36,6 +36,7 @@ mkints <- function(terms, intvars){
 #' @details lorem ipsum
 #' @param terms ipsum
 #' @param intvars ipsum
+#' @param binvars binary variables (character vector) which are excluded to avoid meaningless self-interactions
 #' @export
 #' @examples
 #' runif(1)
@@ -46,6 +47,10 @@ mkints <- function(terms, intvars){
     newout[j] <- sortstring(newout[j])
   }
   out <- unique(c(out, newout))
+ }
+ if(!is.null(binvars)){
+  excl = paste(binvars, binvars, sep='.*')
+  out = setdiff(out, excl)
  }
  trim(paste(out, collapse=" "))
 }
@@ -74,7 +79,7 @@ trimints <- function(trimvars, terms){
 
 
 #create a model based on generic terms (mkmodidx probably better)
-mkmod <- function(coef, terms, start=1){
+mkmod <- function(coef, terms, start=1, catmod=FALSE){
 #' @title lorem ipsum
 #' 
 #' @description lorem ipsum
@@ -90,7 +95,7 @@ mkmod <- function(coef, terms, start=1){
  for(i in (start-1)+1:length(terms)){
    mod <- paste0(mod, " + ", coef, "[", i, "]*", terms[i-(start-1)])
  }
-cat( "\n", mod, "\n\n")
+if(catmod) cat( "\n", mod, "\n\n")
 return(mod)
 }
 
@@ -147,6 +152,163 @@ mkintervention <- function(mod, vars, subs){
  }
  trim(mod)
 }
+
+
+stan_basic <- function(x=c('x', 'z'),
+                       z=c('bmi'), 
+                       y='y',
+                       binvars = NULL,
+                       matx="X", 
+                       binary=TRUE, 
+                       vectorized=FALSE,
+                       xintv=rbind(c(.99, 0),c(0, .99),c(.99, .99))){
+#' @title make a basic stan model
+#' 
+#' @description lorem ipsum
+#' 
+#' @details lorem ipsum
+#' @param x intervenable exposures (character vector)
+#' @param z covariates (character vector)
+#' @param y outcome
+#' @param binvars = non-outcome variables that are binary (character vector)
+#' @param matx optional, name of matrix with intervenable exposures
+#' @param binary logical, is outcome binary?
+#' @param vectorized logical, should model be expressed in vector notation when possible?
+#' @param xintv matrix with ncol = number of intervenable exposures, nrow = number of interventions. Each value is on [0,1] and represents the proportional decrease in the value of x upon hypothetical intervention
+#' @export
+#' @examples
+#' # library(rstan)
+#'  dgm <- function(N=100, trueRD=0.2){
+#'    x1 = rbinom(N, 1, 0.5)
+#'    py00 = runif(N)*0.1 + 0.4
+#'    l2 = rbinom(N, 1, 1/(1+exp(-1 + x1 + py00)))
+#'    x2 = rbinom(N, 1, 1/(1+exp(-1 + x1 + l2)))
+#'    py = py00 + trueRD*((x1 + x2)/2) #true risk difference per unit exposure;
+#'    y = rbinom(N, 1, py)
+#'    data.frame(x1, l2, x2, y)
+#'  }
+#'  dat = as.list(dgm(100))
+#'  dat$N = 100
+#'  dat$p = 5
+#'  
+#'  source("~/Epiprojects/wellwater/sims/code/make_stan_terms.R")
+#'  
+#'  mod = stan_basic(x=c('x1', 'x2'), z = 'l2', y='y', binvars=c('x1', 'x2', 'l2'), xintv = rbind(c(1,0), c(0,1),c(1,1)), vectorized = TRUE, binary=TRUE, matx = NULL)
+#'  cat(mod)
+#' # usage in stan (or edit by hand)
+#' # not run
+#' # stan(model_code = mod, data = dat, chains=1, iter=100)
+  # initialize each block  
+  data <- 'data {\n  int<lower=0> N;\n  int<lower=0> p;'
+  tdata <- 'transformed data {'
+  parms <- 'parameters {'
+  tparms <- 'transformed parameters {'
+  model <-  'model {'
+  gquant <- 'generated quantities {'
+  
+  # data
+  if(binary){
+    data = paste0(data, "\n  int<lower=0, upper=1> ", y, "[N];")
+  }
+  if(!binary){
+    data = paste0(data, "\n  real ", y, "[N];")
+  }
+  if(!vectorized){
+    if(is.null(matx)) for(n in x) data = (paste0(data, "\n  real ", n, "[N];"))
+    for(n in z) data = (paste0(data, "\n  real ", z, "[N];"))
+  }
+  if(vectorized){
+    if(is.null(matx)) for(n in x) data = (paste0(data, "\n  vector[N] ", n, ";"))
+    for(n in z) data = (paste0(data, "\n  vector[N] ", n, ";"))
+  }
+  if(!is.null(matx)){
+    data = paste0(data, "\n  matrix[N,", length(x),"] ", matx, ";")
+  }
+  # transformed data
+  if(!is.null(matx)){
+    j = 1
+    for(n in x) {
+      tdata = paste0(tdata, "\n  vector[N]", n, " = col(", matx, ",",j,");")
+      j=j+1
+    }
+  }
+  # parameters
+    parms = paste0(parms, '\n  vector[p] b_;')
+    parms = paste0(parms, '\n  real beta0;') 
+    if(!binary) parms = paste0(parms, '\n  real<lower=0> sigma;') 
+  # transformed parameters
+    tparms = paste0(tparms, '\n  vector[p] beta;')
+    tparms = paste0(tparms, '\n  beta = b_ * 10.0;')
+  
+  # model
+  model = paste0(model, '\n  {\n  vector[N] mu;;')
+  intx = str_split(mkints(terms=c(x,z), intvars=c(x,z), binvars=binvars), " ")[[1]]
+  model = paste0(model, '\n  beta0 ~ normal(0, 10);')
+  model = paste0(model, '\n  b_ ~ normal(0, 1);')
+  if(!binary) model = paste0(model, '\n  sigma ~ cauchy(0, 1);//// half cauchy')
+  if(!vectorized){
+    model = paste0(model, '\n   for(i in 1:N){')
+    mucode <- mkmodidx(coef='beta', terms=c(c(x,z), intx), start=1, print = FALSE, indexed = TRUE)
+    model = paste0(model, '\n    mu[i] = ', str_wrap(mucode, 80, exdent=12), ';')
+    if(binary) model = paste0(model, '\n   y ~ bernoulli_logit(mu[i]);')
+    if(!binary) model = paste0(model, '\n   y ~ normal(mu[i], sigma);')
+    model = paste0(model, '\n   }//i')
+  }
+  if(vectorized){
+    m1 = mkmod(coef='beta', terms=c(c(x,z), intx), start=1) # better
+    mucode = gsub("\\.\\*", " .*", m1)
+    model = paste0(model, '\n  mu = ', str_wrap(mucode, 80, exdent=11), ';')
+    if(binary) model = paste0(model, '\n   y ~ bernoulli_logit(mu);')
+    if(!binary) model = paste0(model, '\n   y ~ normal(mu, sigma);')
+  }
+  model = paste0(model, '\n    }//local')
+
+
+  # generated quantities
+  if(is.null(xintv)) xintv = rbind(rep(0, length(x)))
+  gquant = paste0(gquant, '\n  vector[', nrow(xintv),'] rd;\n {')
+  gquant = paste0(gquant, '\n  vector[N] r1;\n  vector[N] r0;')
+  
+  gquant = paste0(gquant, '\n  matrix[', nrow(xintv), ',', ncol(xintv),'] intprop = [\n')
+  gquant = paste0(gquant, paste('      [', apply(xintv, 1, function(x) paste(x, collapse=',')), ']', collapse=',\n'))
+  gquant = paste0(gquant, '];\n')
+  if(vectorized){
+    nc = mkintervention(mucode, vars=x, subs=x) 
+    gquant = paste0(gquant, '\n  r0 = ', str_wrap(nc, 80, exdent=11), ';')
+    gquant = paste0(gquant, '\n   for(j in 1:',nrow(xintv),'){')
+    subs = sapply(1:ncol(xintv), function(i) paste0('((1-intprop[j,', i, '])*',x[i],')'))
+    ints = mkintervention(mucode, vars=x, subs=c(subs)) 
+    gquant = paste0(gquant, '\n    r1 = ', str_wrap(ints, 80, exdent=11), ';')
+    if(binary) gquant = paste0(gquant, '\n    rd[j] = mean(inv_logit(r1))-mean(inv_logit(r0));')
+    if(!binary) gquant = paste0(gquant, '\n    rd[j] = mean(r1)-mean(r0);')
+    gquant = paste0(gquant, '\n  }//j')
+  }
+  if(!vectorized){
+    gquant = paste0(gquant, '\n  for(j in 1:',nrow(xintv),'){')
+    gquant = paste0(gquant, '\n   for(i in 1:N){')
+    nc = mkintervention(mucode, vars=x, subs=x) 
+    gquant = paste0(gquant, '\n    r0[i] = ', str_wrap(nc, 80, exdent=12), ';')
+
+    subs = sapply(1:ncol(xintv), function(i) paste0('(1-intprop[j,', i, '])*',x[i],''))
+    ints = mkintervention(mucode, vars=x, subs=c(subs)) 
+    gquant = paste0(gquant, '\n    r1[i] = ', str_wrap(ints, 80, exdent=12), ';')
+    gquant = paste0(gquant, '\n   }//i')
+    if(binary) gquant = paste0(gquant, '\n    rd[j] = mean(inv_logit(r1))-mean(inv_logit(r0));')
+    if(!binary) gquant = paste0(gquant, '\n    rd[j] = mean(r1)-mean(r0);')
+    gquant = paste0(gquant, '\n  }//j')
+  } 
+
+  # end with a bracket  
+  data <- paste0(data, '\n}// end data')
+  tdata <- paste0(tdata, '\n}// end transformed data')
+  parms <- paste0(parms, '\n}// end parameters')
+  tparms <- paste0(tparms, '\n}// end transformed parameters')
+  model <- paste0(model, '\n}// end model')
+  gquant <- paste0(gquant, '\n }//local\n}// end stan code\n\n')
+  paste(data, tdata, parms, tparms, model, gquant, sep = "\n")
+}
+
+
 
 
 

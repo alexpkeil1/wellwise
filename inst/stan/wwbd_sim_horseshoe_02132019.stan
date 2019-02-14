@@ -21,7 +21,7 @@ parameters{
   real<lower=0> zeta; 
   vector<lower=0>[p] nu; 
   real b0; // given uniform prior
-  real<lower=0> k; 
+  //real<lower=0> k; // goes wild
 }
 transformed parameters{
 
@@ -36,7 +36,7 @@ transformed parameters{
 model{
 {
   vector[N] mu;
-  //real k = 1; // d.f. for t distribution of global shrinkage parameter 
+  real k = 1; // d.f. for t distribution of global shrinkage parameter 
                 //(can make into a r.v., as well, but that is very slow)
   b0 ~ normal(0, 5);
   beta_ ~ normal(0, 1);
