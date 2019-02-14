@@ -5,10 +5,13 @@
 \alias{plot.bgfsimres}
 \title{lorem ipsum}
 \usage{
-\method{plot}{bgfsimres}(x, ...)
+\method{plot}{bgfsimres}(x, type = ifelse(nrow(x$postmeans) > 50,
+  "density", "hist"), ...)
 }
 \arguments{
 \item{x}{ipsum}
+
+\item{type}{"density" "hist"}
 
 \item{...}{ipsum}
 }
@@ -20,4 +23,5 @@ lorem ipsum
 }
 \examples{
 runif(1)
+
 }

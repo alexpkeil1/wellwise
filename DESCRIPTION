@@ -1,7 +1,7 @@
 Package: wellwise
 Title: WELL Water, Infants, and a Safe Environment: simulations
-Version: 0.1.0
-Date: 2019-02-13
+Version: 0.1.4
+Date: 2019-02-14
 Authors@R: 
     person(given = "Alexander",
            family = "Keil",
@@ -12,10 +12,13 @@ Maintainer: Alexander Keil <akeil@unc.edu>
 Description: Simulations for 1R01ES029531-01.
 License: GPL (>= 2)
 Depends: 
+    R (>= 3.0)
+Imports: 
     dplyr,
-    R (>= 3.0),
+    ggplot2,
     readr,
-    rstan
+    rstan,
+    tidyr
 Encoding: UTF-8
 Language: en-US
 LazyData: true

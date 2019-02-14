@@ -4,9 +4,11 @@
 \alias{data_importer}
 \title{lorem ipsum}
 \usage{
-data_importer(...)
+data_importer(package = NULL, ...)
 }
 \arguments{
+\item{package}{import data from a specific package (NULL or 'wellwise')}
+
 \item{...}{ipsum}
 }
 \description{

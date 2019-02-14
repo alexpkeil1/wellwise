@@ -4,11 +4,11 @@
 \alias{analysis_wrapper}
 \title{lorem ipsum}
 \usage{
-analysis_wrapper(iter, rawdata, dir = "~/temp/", root, debug = FALSE,
-  verbose = FALSE, ...)
+analysis_wrapper(simiters, rawdata, dir = "~/temp/", root,
+  debug = FALSE, verbose = FALSE, ...)
 }
 \arguments{
-\item{iter}{ipsum}
+\item{simiters}{ipsum}
 
 \item{rawdata}{ipsum}
 

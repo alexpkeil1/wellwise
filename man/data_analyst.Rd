@@ -5,7 +5,8 @@
 \title{lorem ipsum}
 \usage{
 data_analyst(i, raw = raw, fl = "~/temp.csv", s.code = NULL,
-  iter = 2500, warmup = 500, p = NULL, dx = NULL, N = NULL, ...)
+  s.file = NULL, iter = 2500, warmup = 500, p = NULL, dx = NULL,
+  N = NULL, ...)
 }
 \arguments{
 \item{i}{ipsum}
@@ -14,7 +15,9 @@ data_analyst(i, raw = raw, fl = "~/temp.csv", s.code = NULL,
 
 \item{fl}{ipsum}
 
-\item{s.code}{ipsum}
+\item{s.code}{name of a character string with a stan model}
+
+\item{s.file}{character name of a presepecified stan model ("wwbd_simtemplate_20190205", "wwbd_simlogistic_TransParameter_0211201920190211")}
 
 \item{iter}{ipsum}
 
