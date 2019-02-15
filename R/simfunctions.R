@@ -78,7 +78,7 @@ get_model <- function(filename='logistic'){
 #' @description lorem ipsum
 #' 
 #' @details lorem ipsum
-#' @param fit ipsum
+#' @param filename character string with stub, or name (stub.stan) of file in /inst directory that contains a stan model
 #' @param ... ipsum
 #' @importFrom readr read_file
 #' @export
@@ -205,7 +205,8 @@ analysis_wrapper <- function(simiters,
   call = match.call()
   # perform multiple analyses
   if(length(simiters)==1) {
-    sq = 1:simiters
+    #sq = 1:simiters
+    sq = simiters
   } else{
     sq = simiters
   }

@@ -7,7 +7,7 @@
 get_model(filename = "logistic")
 }
 \arguments{
-\item{fit}{ipsum}
+\item{filename}{character string with stub, or name (stub.stan) of file in /inst directory that contains a stan model}
 
 \item{...}{ipsum}
 }
