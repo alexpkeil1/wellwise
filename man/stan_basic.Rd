@@ -5,8 +5,9 @@
 \title{make a basic stan model}
 \usage{
 stan_basic(x = c("x", "z"), z = c("bmi"), y = "y", binvars = NULL,
-  matx = "X", binary = TRUE, vectorized = FALSE,
-  xintv = rbind(c(0.99, 0), c(0, 0.99), c(0.99, 0.99)))
+  matx = "X", standardizex = TRUE, binary = TRUE,
+  vectorized = FALSE, xintv = rbind(c(0.99, 0), c(0, 0.99), c(0.99,
+  0.99)))
 }
 \arguments{
 \item{x}{intervenable exposures (character vector)}
@@ -18,6 +19,8 @@ stan_basic(x = c("x", "z"), z = c("bmi"), y = "y", binvars = NULL,
 \item{binvars}{= non-outcome variables that are binary (character vector)}
 
 \item{matx}{optional, name of matrix with intervenable exposures}
+
+\item{standardizex}{logical, should x be standardized?}
 
 \item{binary}{logical, is outcome binary?}
 

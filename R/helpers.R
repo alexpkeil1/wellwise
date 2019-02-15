@@ -148,18 +148,19 @@ mkintervention <- function(mod, vars, subs){
  for(i in 1:length(vars)){
   var <- vars[i]
   sub <- subs[i]
-   mod <- gsub(paste0(var, "([\\[ ])"), paste0(sub, "\\1"), paste0(mod, " "))
+   mod <- gsub(paste0(var, "([\\[ -])"), paste0(sub, "\\1"), paste0(mod, " "))
  }
  trim(mod)
 }
 
 
 stan_basic <- function(x=c('x', 'z'),
-                       z=c('bmi'), 
+                       z=c('bmi'),
                        y='y',
                        binvars = NULL,
-                       matx="X", 
-                       binary=TRUE, 
+                       matx="X",
+                       standardizex=TRUE,
+                       binary=TRUE,
                        vectorized=FALSE,
                        xintv=rbind(c(.99, 0),c(0, .99),c(.99, .99))){
 #' @title make a basic stan model
@@ -172,6 +173,7 @@ stan_basic <- function(x=c('x', 'z'),
 #' @param y outcome
 #' @param binvars = non-outcome variables that are binary (character vector)
 #' @param matx optional, name of matrix with intervenable exposures
+#' @param standardizex logical, should x be standardized?
 #' @param binary logical, is outcome binary?
 #' @param vectorized logical, should model be expressed in vector notation when possible?
 #' @param xintv matrix with ncol = number of intervenable exposures, nrow = number of interventions. Each value is on [0,1] and represents the proportional decrease in the value of x upon hypothetical intervention
@@ -228,10 +230,25 @@ stan_basic <- function(x=c('x', 'z'),
   if(!is.null(matx)){
     j = 1
     for(n in x) {
-      tdata = paste0(tdata, "\n  vector[N]", n, " = col(", matx, ",",j,");")
+      tdata = paste0(tdata, "\n  vector[N] ", n, " = col(", matx, ",",j,");")
       j=j+1
     }
   }
+  
+   # standardized exposures
+   if(standardizex){
+     for(n in x) tdata = paste0(tdata, paste0("\n  vector[N] cen_", n, ";"))
+     for(n in x) tdata = paste0(tdata, paste0("\n  real m", n, " = mean(", n, ");"))
+     for(n in x) tdata = paste0(tdata, paste0("\n  real s", n, " = sd(", n, ");"))
+     for(n in x) tdata = paste0(tdata, paste0("\n  cen_", n, " = (", n ,"-m",n ,") ./ s",n,";"))
+     ox = x # original x
+     xs = paste0("((", x ,"-m",x ,") ./ s",x,")") # x with long hand standardization
+     x = paste0('cen_', x)  # standardized x
+   }
+   if(!standardizex){
+     ox=x
+     xs=x
+   }   
   # parameters
     parms = paste0(parms, '\n  vector[p] b_;')
     parms = paste0(parms, '\n  real beta0;') 
@@ -249,6 +266,7 @@ stan_basic <- function(x=c('x', 'z'),
   if(!vectorized){
     model = paste0(model, '\n   for(i in 1:N){')
     mucode <- mkmodidx(coef='beta', terms=c(c(x,z), intx), start=1, print = FALSE, indexed = TRUE)
+    mucode <- gsub('beta0[i]', 'beta0', mucode, fixed=TRUE)
     model = paste0(model, '\n    mu[i] = ', str_wrap(mucode, 80, exdent=12), ';')
     if(binary) model = paste0(model, '\n   y ~ bernoulli_logit(mu[i]);')
     if(!binary) model = paste0(model, '\n   y ~ normal(mu[i], sigma);')
@@ -272,12 +290,20 @@ stan_basic <- function(x=c('x', 'z'),
   gquant = paste0(gquant, '\n  matrix[', nrow(xintv), ',', ncol(xintv),'] intprop = [\n')
   gquant = paste0(gquant, paste('      [', apply(xintv, 1, function(x) paste(x, collapse=',')), ']', collapse=',\n'))
   gquant = paste0(gquant, '];\n')
+  # use standardized versions
+  if(standardizex){
+    for(j in 1:length(x)) mucode = gsub(x[j], xs[j], mucode, fixed=TRUE) # replace standardized with long hand standardized
+    if(!vectorized){
+      for(j in 1:length(x)) mucode = gsub(paste0(xs[j], '[i]'), xs[j], mucode, fixed=TRUE) # replace standardized with long hand standardized
+      for(j in 1:length(x)) mucode = gsub(paste0(ox[j], '-'), paste0(ox[j], '[i]-'), mucode, fixed=TRUE) # replace standardized with long hand standardized
+    }
+  }
   if(vectorized){
-    nc = mkintervention(mucode, vars=x, subs=x) 
+    nc = mkintervention(mucode, vars=ox, subs=ox) 
     gquant = paste0(gquant, '\n  r0 = ', str_wrap(nc, 80, exdent=11), ';')
     gquant = paste0(gquant, '\n   for(j in 1:',nrow(xintv),'){')
-    subs = sapply(1:ncol(xintv), function(i) paste0('((1-intprop[j,', i, '])*',x[i],')'))
-    ints = mkintervention(mucode, vars=x, subs=c(subs)) 
+    subs = sapply(1:ncol(xintv), function(i) paste0('((1-intprop[j,', i, '])*',ox[i],')'))
+    ints = mkintervention(mucode, vars=ox, subs=c(subs)) 
     gquant = paste0(gquant, '\n    r1 = ', str_wrap(ints, 80, exdent=11), ';')
     if(binary) gquant = paste0(gquant, '\n    rd[j] = mean(inv_logit(r1))-mean(inv_logit(r0));')
     if(!binary) gquant = paste0(gquant, '\n    rd[j] = mean(r1)-mean(r0);')
@@ -286,11 +312,11 @@ stan_basic <- function(x=c('x', 'z'),
   if(!vectorized){
     gquant = paste0(gquant, '\n  for(j in 1:',nrow(xintv),'){')
     gquant = paste0(gquant, '\n   for(i in 1:N){')
-    nc = mkintervention(mucode, vars=x, subs=x) 
+    nc = mkintervention(mucode, vars=ox, subs=ox) 
     gquant = paste0(gquant, '\n    r0[i] = ', str_wrap(nc, 80, exdent=12), ';')
 
-    subs = sapply(1:ncol(xintv), function(i) paste0('(1-intprop[j,', i, '])*',x[i],''))
-    ints = mkintervention(mucode, vars=x, subs=c(subs)) 
+    subs = sapply(1:ncol(xintv), function(i) paste0('(1-intprop[j,', i, '])*',ox[i],''))
+    ints = mkintervention(mucode, vars=ox, subs=c(subs)) 
     gquant = paste0(gquant, '\n    r1[i] = ', str_wrap(ints, 80, exdent=12), ';')
     gquant = paste0(gquant, '\n   }//i')
     if(binary) gquant = paste0(gquant, '\n    rd[j] = mean(inv_logit(r1))-mean(inv_logit(r0));')
@@ -307,7 +333,6 @@ stan_basic <- function(x=c('x', 'z'),
   gquant <- paste0(gquant, '\n }//local\n}// end stan code\n\n')
   paste(data, tdata, parms, tparms, model, gquant, sep = "\n")
 }
-
 
 
 

@@ -1,7 +1,7 @@
 Package: wellwise
 Title: WELL Water, Infants, and a Safe Environment: simulations
 Version: 0.1.4
-Date: 2019-02-14
+Date: 2019-02-15
 Authors@R: 
     person(given = "Alexander",
            family = "Keil",
@@ -18,6 +18,7 @@ Imports:
     ggplot2,
     readr,
     rstan,
+    stringr,
     tidyr
 Encoding: UTF-8
 Language: en-US

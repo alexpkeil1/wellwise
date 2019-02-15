@@ -72,6 +72,23 @@ data_reader <- function(raw, i,
   )
 }
 
+get_model <- function(filename='logistic'){
+#' @title lorem ipsum
+#' 
+#' @description lorem ipsum
+#' 
+#' @details lorem ipsum
+#' @param fit ipsum
+#' @param ... ipsum
+#' @importFrom readr read_file
+#' @export
+#' @examples
+ if(length(grep('.stan', filename))==0) filename=paste0(filename, ".stan")
+ f = system.file('stan', filename, package='wellwise')
+ read_file(f)
+}
+
+
 convergence_check <- function(fit, ...){
 #' @title lorem ipsum
 #' 
@@ -117,84 +134,24 @@ data_analyst <- function(i,
 #' @param ... ipsum
 #' @export
 #' @import rstan
+#' @importFrom  stringr str_length
 #' @examples
 #' runif(1)
   #require(rstan)
   # do single analysis of data
   #stan model
   if(is.null(s.code) & is.null(s.file)) {
-    cat("no stan model given, defaulting to horseshoe prior")
-  s.code <- '
-   // example with horseshoe prior
-   data{
-    int<lower=0> N;
-    int<lower=0> p;
-    int<lower=0> dx;
-    vector[dx] X[N]; // functions like Nx5 matrix (but each column is real[])
-    int y[N];
-   }
-   transformed data{
-    //real meany;
-    //vector[N] ycen;
-    matrix[N,p] D;
-
-    //meany = mean(y);
-    //ycen = y-meany;
-   // todo: transform y to center!
-    for(c in 1:dx){
-     D[,c] = to_vector(X[,c]);
-     //D[,c] = X[,c];
-    }
-    for(c in (dx+1):p){
-     D[,c] = to_vector(X[,c-5]) .* to_vector(X[,c-5]);
-     //D[,c] = X[,c-5] .* X[,c-5];
-    }
-   }
-   parameters{
-    vector<lower=0>[p] lambda; // local shrinkage
-    vector[p] beta;
-    real<lower=0> sigma;
-    real b0; // given uniform prior
-    real<lower=0> tau; // global shrinkage
-    //real<lower=0> sig; // global shrinkage hyperprior
-   }
-   transformed parameters{}
-   model{
-    {
-     vector[N] mu;
-     lambda ~ cauchy(0,1.0); // local shrinkage
-     tau ~ cauchy(0,1.0); // global shrinkage
-     target += -log(sigma*sigma); // jeffreys prior
-     beta ~ normal(0,lambda * tau * sigma);
-     mu = b0 + D * beta;
-     y ~ bernoulli_logit(mu);
-    }
-   }
-   generated quantities{
-   real rd;
-    {
-     vector[N] r1;
-     vector[N] r0;
-     matrix[N,p] D1;
-     matrix[N,p] D0;
-      D1=D;
-      D0=D;
-     for(i in 1:N){
-        // this is intervention to set exposure 1 to 1.0 versus 0.0 (i.e. both main effect
-        // and the self interaction term go to 1.0
-        D1[i,1] = 1.0;
-        D1[i,6] = 1.0;
-        D0[i,1] = 0.0;
-        D0[i,6] = 0.0;
-      }
-    
-      r1 =  inv_logit(b0 + D1 * beta);
-      r0 =  inv_logit(b0 + D0 * beta);
-      rd = mean(r1)-mean(r0);
-    }
-   }
-'
+    cat("no stan model given, defaulting to logistic model with normal priors")
+    s.code <- get_model('logistic')
   }
+  if(str_length(s.code)<40) s.code <- get_model(s.code) # open existing model if none exists
+  #make a guess at p if it's NULL and program is structured properly
+  if(is.null(p) & gregexpr("beta\\[[0-9]+\\]", s.code)[[1]][1]>0) p=max(as.numeric(gsub('beta|\\[|\\]', '', # remove extraneous texts
+                                       unlist(regmatches(s.code, #extract all matches
+                                                         gregexpr("beta\\[[0-9]+\\]", s.code) # find all matches
+                                                         ))
+                                       )))
+  
   sdat = data_reader(raw, i, p=p, dx=dx, N=N)
   # note: keep warming up even for a while after apparent convergence: helps improve efficiency
   #  of adaptive algorithm
