@@ -5,7 +5,7 @@
 \title{lorem ipsum}
 \usage{
 data_reader(raw, i, expnm = c("Arsenic", "Manganese", "Lead", "Cadmium",
-  "Copper"), p = 10, dx = 5, N = NULL, ...)
+  "Copper"), p = 10, dx = 5, N = NULL, verbose = FALSE, ...)
 }
 \arguments{
 \item{raw}{ipsum}

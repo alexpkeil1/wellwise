@@ -23,6 +23,7 @@ data_importer <- function(package=NULL, ...){
 data_reader <- function(raw, i, 
                         expnm = c("Arsenic", "Manganese", "Lead", "Cadmium", "Copper"),
                         p=10, dx=5, N=NULL,
+                        verbose=FALSE,
                         ...){
 #' @title lorem ipsum
 #' 
@@ -43,7 +44,7 @@ data_reader <- function(raw, i,
 #' runif(1)
   #require(dplyr)
   # read data and do elementary processingf, take only single iteration of simulated data
-  cat(paste0("Using exposures: ", expnm, "\n"))
+  if(verbose) cat(paste0("Using exposures: ", expnm, "\n"))
   dat <- raw %>%
     filter(iter==i) %>%
     select(
@@ -52,15 +53,15 @@ data_reader <- function(raw, i,
     filter(complete.cases(.))
   if(is.null(p)){
     p = length(expnm)
-    cat("p is not specified, defaulting to the number of exposures\n")
+    if(verbose) cat("p is not specified, defaulting to the number of exposures\n")
   }
   if(is.null(dx)){
     dx = length(expnm)
-    cat("dx is not specified, defaulting to the number of exposures\n")
+    if(verbose) cat("dx is not specified, defaulting to the number of exposures\n")
   }
   if(is.null(N)){
     N = length(dat$y)
-    cat("N is not specified, defaulting to the number of observed values of y\n")
+    if(verbose) cat("N is not specified, defaulting to the number of observed values of y\n")
   }
   
   with(dat, 
@@ -111,9 +112,11 @@ data_analyst <- function(i,
                          s.file = NULL,
                          iter=2500, 
                          warmup=500, 
+                         chains=4, 
                          p = NULL,
                          dx = NULL,
                          N = NULL,
+                         verbose=FALSE,
                          ...
                 ){
 #' @title lorem ipsum
@@ -128,6 +131,7 @@ data_analyst <- function(i,
 #' @param s.file character name of a presepecified stan model ("wwbd_simtemplate_20190205", "wwbd_simlogistic_TransParameter_0211201920190211")
 #' @param iter ipsum
 #' @param warmup ipsum
+#' @param chains ipsum
 #' @param p ipsum
 #' @param dx ipsum
 #' @param N ipsum
@@ -141,7 +145,7 @@ data_analyst <- function(i,
   # do single analysis of data
   #stan model
   if(is.null(s.code) & is.null(s.file)) {
-    cat("no stan model given, defaulting to logistic model with normal priors")
+    if(verbose) cat("no stan model given, defaulting to logistic model with normal priors")
     s.code <- get_model('logistic')
   }
   if(str_length(s.code)<40) s.code <- get_model(s.code) # open existing model if none exists
@@ -158,7 +162,7 @@ data_analyst <- function(i,
   if(!is.null(s.file)){
      res = stan(file = system.file("stan", paste0(s.file,".stan", package = "wellwise")), 
              data = sdat, 
-             chains = 4, 
+             chains = chains, 
              sample_file=fl, 
              iter=iter, 
              warmup=warmup, 
@@ -166,7 +170,7 @@ data_analyst <- function(i,
   } else if(!is.null(s.code)){
          res = stan(model_code = s.code, 
              data = sdat, 
-             chains = 4, 
+             chains = chains, 
              sample_file=fl, 
              iter=iter, 
              warmup=warmup, 
@@ -176,6 +180,13 @@ data_analyst <- function(i,
   #class(res) <- 'bgfsimmod'
   # inherets 'stanfit' class
   res
+}
+
+
+sink.reset <- function(){
+    for(i in seq_len(sink.number())){
+        sink(NULL)
+    }
 }
 
 analysis_wrapper <- function(simiters, 
@@ -220,13 +231,15 @@ analysis_wrapper <- function(simiters,
   if(verbose) cat(paste0("R output can be seen at ", paste0(dir, root, "_rmsg.txt"), "\n"))
   res = list(1:length(sq))
   j=1
-  sink(paste0(dir, root, "rmsg.txt"), split = FALSE, type = c("output", "message"))
+  filenm = file(paste0(dir, root, "rmsg.txt"), 'w')
+  sink(filenm, split = FALSE, type = c("output", "message"))
   for(i in sq){
     cat(".")
-    res[[j]] = data_analyst(i, rawdata, fl=outfile, ...)
+    res[[j]] = data_analyst(i, rawdata, fl=outfile, verbose=verbose, ...)
     j=j+1
   }
-  sink()
+  sink.reset()
+  close(filenm)
   cat("\n")
   class(res) <- 'bgfsimmodlist'
   res
