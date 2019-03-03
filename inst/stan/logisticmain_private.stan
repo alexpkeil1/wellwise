@@ -29,7 +29,7 @@
      vector[N] mu;
         mu_b ~ normal(0, 5);
         //sig_b ~ cauchy(0, 0.9);// divergent with half cauchy(0,1), cauchy(0,0.9), ok with 0.1
-        sig_b ~ student_t(20, 0, 1.0);// divergent at least df = 20
+        sig_b ~ student_t(25, 0, 1.0);// divergent at df < 25
         //sig_b ~ inv_gamma(10, 1);// non-divergent
         b_ ~ normal(0, 1);
         //beta ~ normal(0, 1); //works

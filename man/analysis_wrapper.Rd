@@ -5,7 +5,7 @@
 \title{lorem ipsum}
 \usage{
 analysis_wrapper(simiters, rawdata, dir = "~/temp/", root,
-  debug = FALSE, verbose = FALSE, ...)
+  debug = FALSE, verbose = FALSE, type = "stan", ...)
 }
 \arguments{
 \item{simiters}{ipsum}

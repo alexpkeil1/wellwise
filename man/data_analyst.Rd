@@ -6,7 +6,7 @@
 \usage{
 data_analyst(i, raw = raw, fl = "~/temp.csv", s.code = NULL,
   s.file = NULL, iter = 2500, warmup = 500, chains = 4, p = NULL,
-  dx = NULL, N = NULL, verbose = FALSE, ...)
+  dx = NULL, N = NULL, verbose = FALSE, type = "stan", ...)
 }
 \arguments{
 \item{i}{ipsum}

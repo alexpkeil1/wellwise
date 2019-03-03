@@ -73,7 +73,7 @@ data_reader <- function(raw, i,
   )
 }
 
-get_model <- function(filename='logistic'){
+get_model <- function(filename='logistic.stan'){
 #' @title lorem ipsum
 #' 
 #' @description lorem ipsum
@@ -84,8 +84,14 @@ get_model <- function(filename='logistic'){
 #' @importFrom readr read_file
 #' @export
 #' @examples
- if(length(grep('.stan', filename))==0) filename=paste0(filename, ".stan")
- f = system.file('stan', filename, package='wellwise')
+ if(length(grep('.stan', filename))==0){
+   filename=paste0(filename, ".stan")
+   f = system.file('stan', filename, package='wellwise')
+ }
+ if(length(grep('.jags', filename))==0){
+   filename=paste0(filename, ".jags")
+   f = system.file('jags', filename, package='wellwise')
+ }
  read_file(f)
 }
 
@@ -117,6 +123,7 @@ data_analyst <- function(i,
                          dx = NULL,
                          N = NULL,
                          verbose=FALSE,
+                         type='stan',
                          ...
                 ){
 #' @title lorem ipsum
@@ -137,7 +144,7 @@ data_analyst <- function(i,
 #' @param N ipsum
 #' @param ... ipsum
 #' @export
-#' @import rstan
+#' @import rstan rjags parallel doParallel
 #' @importFrom  stringr str_length
 #' @examples
 #' runif(1)
@@ -160,6 +167,7 @@ data_analyst <- function(i,
   # note: keep warming up even for a while after apparent convergence: helps improve efficiency
   #  of adaptive algorithm
   if(!is.null(s.file)){
+    if(type=='stan'){
      res = stan(file = system.file("stan", paste0(s.file,".stan", package = "wellwise")), 
              data = sdat, 
              chains = chains, 
@@ -167,7 +175,13 @@ data_analyst <- function(i,
              iter=iter, 
              warmup=warmup, 
              ...)
+    }
+    if(type=='jags'){
+      print("data_analyst: Jags model not yet implemented")
+      return(NULL)
+    }
   } else if(!is.null(s.code)){
+    if(type=='stan'){
          res = stan(model_code = s.code, 
              data = sdat, 
              chains = chains, 
@@ -175,10 +189,31 @@ data_analyst <- function(i,
              iter=iter, 
              warmup=warmup, 
              ...)
+    }
+    if(type=='jags'){
+      tf=tempfile()
+      cat(s.code, file=tf)
+      ncores=4
+      cl <- makeCluster(ncores)
+      registerDoParallel(cl)
+      res <- foreach(1:chains, .packages=c('rjags')) %dopar%{
+        mod = jags.model(file = tf, data = sdat, n.chains=1,n.adapt=100)
+        adapted = FALSE
+        if(!adapted){
+          adapted <- adapt(mod, n.iter=100, end.adaptation = adapted)
+        }
+        update(mod, n.iter=warmup, progress.bar='none')
+        coda.samples(mod,variable.names='rd', # TODO: expand?
+                        n.iter=iter)
+      }
+      stopCluster(cl)
+      res = as.mcmc.list(res)
+      write_csv(path=fl, as.data.frame(as.matrix(res)))
+    }
   }
   #step to include here: automated monitoring for convergence and continued sampling if not converged
   #class(res) <- 'bgfsimmod'
-  # inherets 'stanfit' class
+  # inherets 'mcmc.list' or 'stanfit' class
   res
 }
 
@@ -195,6 +230,7 @@ analysis_wrapper <- function(simiters,
                              root, 
                              debug=FALSE, 
                              verbose=FALSE,
+                             type='stan',
                              ...
                              ){
 #' @title lorem ipsum
@@ -235,7 +271,7 @@ analysis_wrapper <- function(simiters,
   sink(filenm, split = FALSE, type = c("output", "message"))
   for(i in sq){
     cat(".")
-    res[[j]] = data_analyst(i, rawdata, fl=outfile, verbose=verbose, ...)
+    res[[j]] = data_analyst(i, rawdata, fl=outfile, verbose=verbose, type=type, ...)
     j=j+1
   }
   sink.reset()
@@ -268,16 +304,23 @@ summary.bgfsimmodlist <- function(
   # to do
   # if have values stored from analysis_wrapper, then use those
   # else read csv files
+  type = class(object[[1]])
   numf = length(object)
   postmeans = list(numf)
   divergents = numeric(numf)
   for(r in 1:numf){
-    tt = get_sampler_params(object[[r]])
-    divergents[r] = sum(c(lapply(tt, function(x) sum(x[,"divergent__"]))>0))
-
-    sum = summary(object[[r]])$summary
-    idx = grep('rd', rownames(sum))
-    postmeans[[r]] = summary(object[[r]])$summary[idx,1]
+    if(type=='stanfit'){
+      tt = get_sampler_params(object[[r]])
+      divergents[r] = sum(c(lapply(tt, function(x) sum(x[,"divergent__"]))>0))
+      sum = summary(object[[r]])$summary
+      idx = grep('rd', rownames(sum))
+      postmeans[[r]] = sum[idx,1]
+    } else{
+      divergents[r] = NA
+      sum = summary(object[[r]])$statistics
+      idx = grep('rd', rownames(sum))
+      postmeans[[r]] = sum[idx,1]
+    }
   }
   pm = as.data.frame(t(simplify2array(postmeans)))
   # report on posterior mean risk difference for each iteration
