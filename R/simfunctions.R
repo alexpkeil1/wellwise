@@ -39,19 +39,25 @@ data_reader <- function(raw, i,
 #' @param verbose FALSE
 #' @param ... ipsum
 #' @export
-#' @import dplyr
 #' @importFrom stats complete.cases
 #' @examples
 #' runif(1)
-  #require(dplyr)
   # read data and do elementary processingf, take only single iteration of simulated data
   if(verbose) cat(paste0("Using exposures: ", expnm, "\n"))
-  dat <- raw %>%
-    filter(iter==i) %>%
-    select(
-      c("iter", "y", expnm)
-    ) %>%
-    filter(complete.cases(.))
+  #dat <- raw %>%
+  #  filter(iter==i) %>%
+  #  select(
+  #    c("iter", "y", expnm)
+  #  ) %>%
+  #  filter(complete.cases(.))
+  # todo: remove dependency on dplyr
+  if(is.data.frame(raw)){
+    dat <- raw[which(raw$iter == i), c("iter", "y", expnm), drop=FALSE]
+  } else{
+    raw <- as.data.frame(raw)
+    dat <- raw[which(raw$iter == i), c("iter", "y", expnm), drop=FALSE]
+  }
+  
   if(is.null(p)){
     p = length(expnm)
     if(verbose) cat("p is not specified, defaulting to the number of exposures\n")
