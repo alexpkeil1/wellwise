@@ -31,6 +31,10 @@ data_analyst(i, raw = raw, fl = "~/temp.csv", s.code = NULL,
 
 \item{N}{ipsum}
 
+\item{verbose}{FALSE}
+
+\item{type}{'stan' or 'jags'}
+
 \item{...}{ipsum}
 }
 \description{

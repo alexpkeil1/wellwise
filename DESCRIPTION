@@ -1,7 +1,7 @@
 Package: wellwise
 Title: WELL Water, Infants, and a Safe Environment: simulations
-Version: 0.2.2
-Date: 2019-03-03
+Version: 0.2.6
+Date: 2019-03-04
 Authors@R: 
     person(given = "Alexander",
            family = "Keil",
@@ -14,8 +14,10 @@ License: GPL (>= 2)
 Depends: 
     R (>= 3.0)
 Imports: 
+    coda,
     doParallel,
     dplyr,
+    foreach,
     ggplot2,
     parallel,
     readr,

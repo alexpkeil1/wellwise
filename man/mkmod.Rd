@@ -12,6 +12,8 @@ mkmod(coef, terms, start = 1, catmod = FALSE)
 \item{terms}{ipsum}
 
 \item{start}{ipsum}
+
+\item{catmod}{ipsum}
 }
 \description{
 lorem ipsum

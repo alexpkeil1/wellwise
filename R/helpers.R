@@ -88,6 +88,7 @@ mkmod <- function(coef, terms, start=1, catmod=FALSE){
 #' @param coef ipsum
 #' @param terms ipsum
 #' @param start ipsum
+#' @param catmod ipsum
 #' @export
 #' @examples
 #' runif(1)
@@ -177,6 +178,7 @@ stan_basic <- function(x=c('x', 'z'),
 #' @param binary logical, is outcome binary?
 #' @param vectorized logical, should model be expressed in vector notation when possible?
 #' @param xintv matrix with ncol = number of intervenable exposures, nrow = number of interventions. Each value is on [0,1] and represents the proportional decrease in the value of x upon hypothetical intervention
+#' @importFrom stringr str_split str_wrap
 #' @export
 #' @examples
 #' # library(rstan)
@@ -372,6 +374,7 @@ jags_basic <- function(x=c('x', 'z'),
 #' @param standardizex logical, should x be standardized?
 #' @param binary logical, is outcome binary?
 #' @param xintv matrix with ncol = number of intervenable exposures, nrow = number of interventions. Each value is on [0,1] and represents the proportional decrease in the value of x upon hypothetical intervention
+#' @importFrom stringr str_split str_wrap
 #' @export
 #' @examples
 #' # library(rjags)
@@ -436,10 +439,11 @@ jags_basic <- function(x=c('x', 'z'),
 
   if(is.null(xintv)) xintv = rbind(rep(0, length(x)))
   for(ridx in 1:nrow(xintv)){
-    for(cidx in 1:ncol(xintv)){
-      data = paste0(data,
-                    '\n  intprop[', ridx, ',',cidx, '] = ',xintv[ridx,cidx] ,'')
-    }
+    #for(cidx in 1:ncol(xintv)){
+    #  data = paste0(data,
+    #                '\n  intprop[', ridx, ',',cidx, '] = ',xintv[ridx,cidx] ,'')
+    #}
+    data = paste0(data,'\n  intprop[', ridx, ',1:',ncol(xintv),'] = c(',paste0(xintv[ridx,], collapse=',') ,')')    
   }
   subs = sapply(1:ncol(xintv), function(i) paste0('(1-intprop[j,', i, '])*',ox[i],''))
   ints = mkintervention(mucode, vars=ox, subs=c(subs)) 

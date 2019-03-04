@@ -20,6 +20,8 @@ data_reader(raw, i, expnm = c("Arsenic", "Manganese", "Lead", "Cadmium",
 
 \item{N}{ipsum}
 
+\item{verbose}{FALSE}
+
 \item{...}{ipsum}
 }
 \description{

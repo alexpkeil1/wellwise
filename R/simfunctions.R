@@ -36,6 +36,7 @@ data_reader <- function(raw, i,
 #' @param p ipsum
 #' @param dx ipsum
 #' @param N ipsum
+#' @param verbose FALSE
 #' @param ... ipsum
 #' @export
 #' @import dplyr
@@ -73,14 +74,14 @@ data_reader <- function(raw, i,
   )
 }
 
-get_model <- function(filename='logistic.stan'){
+get_model <- function(filename='logistic.stan', ...){
 #' @title lorem ipsum
 #' 
 #' @description lorem ipsum
 #' 
 #' @details lorem ipsum
 #' @param filename character string with stub, or name (stub.stan) of file in /inst directory that contains a stan model
-#' @param ... ipsum
+#' @param ... UNUSED
 #' @importFrom readr read_file
 #' @export
 #' @examples
@@ -142,10 +143,14 @@ data_analyst <- function(i,
 #' @param p ipsum
 #' @param dx ipsum
 #' @param N ipsum
+#' @param verbose FALSE
+#' @param type 'stan' or 'jags'
 #' @param ... ipsum
 #' @export
-#' @import rstan rjags parallel doParallel
+#' @import rstan rjags parallel doParallel foreach
 #' @importFrom  stringr str_length
+#' @importFrom  coda as.mcmc.list
+#' @importFrom  readr write_csv
 #' @examples
 #' runif(1)
   #require(rstan)
@@ -193,18 +198,23 @@ data_analyst <- function(i,
     if(type=='jags'){
       tf=tempfile()
       cat(s.code, file=tf)
-      ncores=4
+      sds = parallel.seeds("base::BaseRNG", chains);
+      ncores = parallel::detectCores()
       cl <- makeCluster(ncores)
       registerDoParallel(cl)
-      res <- foreach(1:chains, .packages=c('rjags')) %dopar%{
-        mod = jags.model(file = tf, data = sdat, n.chains=1,n.adapt=100)
-        adapted = FALSE
-        if(!adapted){
+      res <- foreach(ch=1:chains, .packages=c('rjags')) %dopar%{
+        mod = jags.model(file = tf, data = sdat, n.chains=1,n.adapt=100,inits=sds[[ch]])
+        adapted = FALSE;aditer=1
+        if(!adapted & aditer<11){
           adapted <- adapt(mod, n.iter=100, end.adaptation = adapted)
+          aditer=aditer+1
         }
         update(mod, n.iter=warmup, progress.bar='none')
-        coda.samples(mod,variable.names='rd', # TODO: expand?
+        ft = coda.samples(mod,variable.names='rd', # TODO: expand?
                         n.iter=iter)
+        print(class(ft))
+        print(class(ft[[1]]))
+        ft[[1]] # outputs list by default, but just need MCMC object
       }
       stopCluster(cl)
       res = as.mcmc.list(res)
@@ -218,11 +228,24 @@ data_analyst <- function(i,
 }
 
 
-sink.reset <- function(){
+sink.reset <- function(...){
+#' @title clean up problems with sinking where output doesn't show up
+#' 
+#' @description analytic functions in wellwise use `sink` to avoid 
+#' polluting the output with progress bars. A side effect is that sometimes
+#' output can be turned off altogether. Runk sink.reset() after data_analyst
+#' as a way to fix this problem
+#' 
+#' @details lorem ipsum
+#' @param ... unused
+#' @export
+#' @examples
+#' sink.reset()    
     for(i in seq_len(sink.number())){
-        sink(NULL)
+        sink(file=NULL)
     }
 }
+
 
 analysis_wrapper <- function(simiters, 
                              rawdata, 
@@ -238,12 +261,13 @@ analysis_wrapper <- function(simiters,
 #' @description lorem ipsum
 #' 
 #' @details lorem ipsum
-#' @param simiters ipsum
-#' @param rawdata ipsum
-#' @param dir ipsum
-#' @param root ipsum
-#' @param debug ipsum
-#' @param verbose ipsum
+#' @param simiters 1:2
+#' @param rawdata RAW
+#' @param dir "~/temp/"
+#' @param root "test"
+#' @param debug FALSE
+#' @param verbose FALSE
+#' @param type 'jags' or 'stan'
 #' @param ... ipsum
 #' @export
 #' @examples
@@ -295,6 +319,7 @@ summary.bgfsimmodlist <- function(
 #' @param ... ipsum
 #' @import rstan
 #' @method summary bgfsimmodlist
+#' @import rstan
 #' @importFrom stats sd quantile
 #' @export
 #' @return a 'bgfsimres' object
@@ -317,7 +342,7 @@ summary.bgfsimmodlist <- function(
       postmeans[[r]] = sum[idx,1]
     } else{
       divergents[r] = NA
-      sum = summary(object[[r]])$statistics
+      sum = coda:::summary.mcmc.list(object[[r]])$statistics
       idx = grep('rd', rownames(sum))
       postmeans[[r]] = sum[idx,1]
     }

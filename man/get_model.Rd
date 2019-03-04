@@ -4,12 +4,12 @@
 \alias{get_model}
 \title{lorem ipsum}
 \usage{
-get_model(filename = "logistic.stan")
+get_model(filename = "logistic.stan", ...)
 }
 \arguments{
 \item{filename}{character string with stub, or name (stub.stan) of file in /inst directory that contains a stan model}
 
-\item{...}{ipsum}
+\item{...}{UNUSED}
 }
 \description{
 lorem ipsum

@@ -8,17 +8,19 @@ analysis_wrapper(simiters, rawdata, dir = "~/temp/", root,
   debug = FALSE, verbose = FALSE, type = "stan", ...)
 }
 \arguments{
-\item{simiters}{ipsum}
+\item{simiters}{1:2}
 
-\item{rawdata}{ipsum}
+\item{rawdata}{RAW}
 
-\item{dir}{ipsum}
+\item{dir}{"~/temp/"}
 
-\item{root}{ipsum}
+\item{root}{"test"}
 
-\item{debug}{ipsum}
+\item{debug}{FALSE}
 
-\item{verbose}{ipsum}
+\item{verbose}{FALSE}
+
+\item{type}{'jags' or 'stan'}
 
 \item{...}{ipsum}
 }
