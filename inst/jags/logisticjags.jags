@@ -1,0 +1,55 @@
+data {
+  Arsenic = X[,1]
+  Manganese = X[,2]
+  Lead = X[,3]
+  Cadmium = X[,4]
+  Copper = X[,5]
+  intprop[1,1:5] = c(0.98,0.98,0.98,0.98,0)
+  intprop[2,1:5] = c(0,0.985,0,0.965,0)
+  intprop[3,1:5] = c(0,0.918,0,0,0)
+  intprop[4,1:5] = c(0.994,0.98,0.98,0.987,0)
+  intprop[5,1:5] = c(0,0,0,0.99,0)
+}# end data
+model {
+  for(i in 1:N){
+    y[i] ~ dbern(mu[i]);
+    mu[i] = ilogit(beta0 + beta[1]*Arsenic[i] + beta[2]*Manganese[i] + beta[3]*Lead[i] +
+            beta[4]*Cadmium[i] + beta[5]*Copper[i] + beta[6]*Arsenic[i]*Arsenic[i]
+            + beta[7]*Arsenic[i]*Manganese[i] + beta[8]*Arsenic[i]*Lead[i] +
+            beta[9]*Arsenic[i]*Cadmium[i] + beta[10]*Arsenic[i]*Copper[i] +
+            beta[11]*Manganese[i]*Manganese[i] + beta[12]*Lead[i]*Manganese[i]
+            + beta[13]*Cadmium[i]*Manganese[i] + beta[14]*Copper[i]*Manganese[i]
+            + beta[15]*Lead[i]*Lead[i] + beta[16]*Cadmium[i]*Lead[i] +
+            beta[17]*Copper[i]*Lead[i] + beta[18]*Cadmium[i]*Cadmium[i] +
+            beta[19]*Cadmium[i]*Copper[i] + beta[20]*Copper[i]*Copper[i]);
+    for(j in 1:5){
+      r1[i,j] = ilogit(beta0 + beta[1]*(1-intprop[j,1])*Arsenic[i] + beta[2]*(1-intprop[j,
+            2])*Manganese[i] + beta[3]*(1-intprop[j,3])*Lead[i] + beta[4]*(1-
+            intprop[j,4])*Cadmium[i] + beta[5]*(1-intprop[j,5])*Copper[i] + beta[6]*(1-
+            intprop[j,1])*Arsenic[i]*(1-intprop[j,1])*Arsenic[i] + beta[7]*(1-
+            intprop[j,1])*Arsenic[i]*(1-intprop[j,2])*Manganese[i] + beta[8]*(1-
+            intprop[j,1])*Arsenic[i]*(1-intprop[j,3])*Lead[i] + beta[9]*(1-intprop[j,
+            1])*Arsenic[i]*(1-intprop[j,4])*Cadmium[i] + beta[10]*(1-intprop[j,
+            1])*Arsenic[i]*(1-intprop[j,5])*Copper[i] + beta[11]*(1-intprop[j,
+            2])*Manganese[i]*(1-intprop[j,2])*Manganese[i] + beta[12]*(1-intprop[j,
+            3])*Lead[i]*(1-intprop[j,2])*Manganese[i] + beta[13]*(1-intprop[j,
+            4])*Cadmium[i]*(1-intprop[j,2])*Manganese[i] + beta[14]*(1-intprop[j,
+            5])*Copper[i]*(1-intprop[j,2])*Manganese[i] + beta[15]*(1-intprop[j,
+            3])*Lead[i]*(1-intprop[j,3])*Lead[i] + beta[16]*(1-intprop[j,4])*Cadmium[i]*(1-
+            intprop[j,3])*Lead[i] + beta[17]*(1-intprop[j,5])*Copper[i]*(1-intprop[j,
+            3])*Lead[i] + beta[18]*(1-intprop[j,4])*Cadmium[i]*(1-intprop[j,4])*Cadmium[i]
+            + beta[19]*(1-intprop[j,4])*Cadmium[i]*(1-intprop[j,5])*Copper[i] + beta[20]*(1-
+            intprop[j,5])*Copper[i]*(1-intprop[j,5])*Copper[i]);
+    }#j
+  }#i
+  for(j in 1:5){
+    rd[j]= mean(r1[,j])-mean(mu)
+  }#j
+  beta0 ~ dnorm(0, 10);
+  for(m in 1:p){
+    beta[m] ~ dnorm(0, 1);
+  }#m
+# end model
+}
+
+
