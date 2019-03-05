@@ -57,7 +57,7 @@ data_reader <- function(raw, i,
     raw <- as.data.frame(raw)
     dat <- raw[which(raw$iter == i), c("iter", "y", expnm), drop=FALSE]
   }
-  
+  dat <- dat[complete.cases(dat),]
   if(is.null(p)){
     p = length(expnm)
     if(verbose) cat("p is not specified, defaulting to the number of exposures\n")
@@ -73,7 +73,8 @@ data_reader <- function(raw, i,
   
   with(dat, 
        list(y=y, 
-            X=as.matrix(select(dat, expnm)), 
+            #X=as.matrix(select(dat, expnm)), 
+            X=as.matrix(dat[, expnm, drop=FALSE]), 
             dx=dx, 
             p=p,
             N=N)
