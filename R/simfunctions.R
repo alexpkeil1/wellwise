@@ -77,7 +77,6 @@ data_reader <- function(raw, i,
   
   with(dat, 
        list(y=y, 
-            #X=as.matrix(select(dat, expnm)), 
             X=as.matrix(dat[, expnm, drop=FALSE]), 
             dx=dx, 
             p=p,
@@ -137,6 +136,7 @@ data_analyst <- function(i,
                          verbose=FALSE,
                          type='stan',
                          stanfit=NA,
+                         basis = c("identity", "iqr", "sd"),
                          ...
                 ){
 #' @title Fit a Stan/JAGS model in a single data set
@@ -161,6 +161,15 @@ data_analyst <- function(i,
 #' @param stanfit Name of stan_model or stan output that can be recycled. This
 #' will use a pre-compiled version of the stan code which cuts simulation time
 #' significantly over multiple runs.
+#' @param basis how to treat exposure variables: 
+#' "identity" = do not transform (default); 
+#' "iqr"= divide every exposure variable by its interquartile range
+#' "sd" = divide every exposure variable by its sd
+#' Note that the parameterization of the BGF interventions will be invariant
+#' to these transformations, so they change the strength of the priors, but
+#' no modifications are necessary to examine interventions of the type:
+#' "reduce exposure j by p%" - interventions that depend on the observed value
+#' of exposure require that the basis be "identity"
 #' @param ... arguments to stan() or coda.samples() for a Stan or JAGS model, 
 #' respectively
 #' @export
@@ -188,6 +197,50 @@ data_analyst <- function(i,
                                        )))
   
   sdat = data_reader(raw, i, p=p, dx=dx, N=N)
+  # if basis is set to something other than 'identity' then perform a variable
+  # transformation on the exposures - helpful for putting model coefficients on
+  # a predictable scale
+  if(basis[1] != "identity"){
+    if(basis[1] == "sd"){
+      sdat$X = 
+        sweep(sdat$X, 2, 
+            STATS=apply(sdat$X, 2, sd), FUN='/')
+    }
+    if(basis[1] == "range"){
+      range = function(x,...) as.numeric(max(x,...) - min(x, ...))
+      sdat$X = 
+        sweep(sdat$X, 2, 
+              STATS=apply(sdat$X, 2, range), FUN='/')
+    }
+    if(basis[1] == "inner90"){
+      iqr = function(x,...) as.numeric(quantile(x, .95, ...) - quantile(x, .05, ...))
+      if(any(apply(sdat$X, 2, iqr)==0)) 
+        stop('Inner 90% change for at least one exposure variable is 0 - 
+change basis to "identity", "sd", or "range"')
+      sdat$X = 
+        sweep(sdat$X, 2, 
+              STATS=apply(sdat$X, 2, iqr), FUN='/')
+    }
+    if(basis[1] == "iqr"){
+      iqr = function(x,...) as.numeric(quantile(x, .75, ...) - quantile(x, .25, ...))
+      if(any(apply(sdat$X, 2, iqr)==0)) 
+        stop('IQR for at least one exposure variable is 0 - change basis to 
+"identity", "sd", "inner90", or "range"')
+      sdat$X = 
+        sweep(sdat$X, 2, 
+              STATS=apply(sdat$X, 2, iqr), FUN='/')
+    }
+    if(basis[1] == "center"){
+      sdat$X = 
+        sweep(sdat$X, 2, 
+              STATS=apply(sdat$X, 2, mean), FUN='-')
+    }
+    if(!(basis[1] %in% c("sd", "iqr", "inner90", "center", "range"))){
+      stop('basis parameter in data_reader needs to be one of
+          "sd", "iqr", "center", "range" 
+          (see help file for data_analyst)')
+    }
+  }
   # note: keep warming up even for a while after apparent convergence: helps improve efficiency
   #  of adaptive algorithm
   if(!is.null(s.file)){
@@ -291,7 +344,7 @@ analysis_wrapper <- function(simiters,
 #' @param stanfit NA or name of object containing a fitted stan model (re-uses
 #' the compiled stan model, which will be efficient for restarting iterations after
 #' checking first one(s) for diagnostics
-#' @param ... ipsum
+#' @param ... arguments to data analyst
 #' @export
 #' @examples
 #' runif(1)

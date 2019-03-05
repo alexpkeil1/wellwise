@@ -406,7 +406,7 @@ jags_basic <- function(x=c('x', 'z'),
   if(!is.null(matx)){
     j = 1
     for(n in x) {
-      data = paste0(data, "\n  ", n, " = ", matx, "[,",j,"]")
+      data = paste0(data, "\n  ", n, " <- ", matx, "[,",j,"]")
       j=j+1
     }
   }
@@ -420,11 +420,11 @@ jags_basic <- function(x=c('x', 'z'),
   mucode <- gsub('beta0[i]', 'beta0', mucode, fixed=TRUE)
   if(binary) {
     model = paste0(model, '\n    y[i] ~ dbern(mu[i]);')
-    model = paste0(model, '\n    mu[i] = ilogit(', str_wrap(mucode, 80, exdent=12), ');')
+    model = paste0(model, '\n    mu[i] <- ilogit(', str_wrap(mucode, 80, exdent=12), ');')
   }
   if(!binary){
     model = paste0(model, '\n    y[i] ~ dnorm(mu[i], sigma);')
-    model = paste0(model, '\n    mu[i] = ', str_wrap(mucode, 80, exdent=12), ';')
+    model = paste0(model, '\n    mu[i] <- ', str_wrap(mucode, 80, exdent=12), ';')
   }
   # interventions
    if(!standardizex){

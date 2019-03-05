@@ -7,7 +7,7 @@
 data_analyst(i, raw = raw, fl = "~/temp.csv", s.code = NULL,
   s.file = NULL, iter = 2500, warmup = 500, chains = 4, p = NULL,
   dx = NULL, N = NULL, verbose = FALSE, type = "stan",
-  stanfit = NA, ...)
+  stanfit = NA, basis = c("identity", "iqr", "sd"), ...)
 }
 \arguments{
 \item{i}{iteration in simulated data}
@@ -40,6 +40,16 @@ for adaptation of MCMC parameters/burnin}
 \item{stanfit}{Name of stan_model or stan output that can be recycled. This
 will use a pre-compiled version of the stan code which cuts simulation time
 significantly over multiple runs.}
+
+\item{basis}{how to treat exposure variables: 
+"identity" = do not transform (default); 
+"iqr"= divide every exposure variable by its interquartile range
+"sd" = divide every exposure variable by its sd
+Note that the parameterization of the BGF interventions will be invariant
+to these transformations, so they change the strength of the priors, but
+no modifications are necessary to examine interventions of the type:
+"reduce exposure j by p%" - interventions that depend on the observed value
+of exposure require that the basis be "identity"}
 
 \item{...}{arguments to stan() or coda.samples() for a Stan or JAGS model, 
 respectively}

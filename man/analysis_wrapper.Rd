@@ -26,7 +26,7 @@ analysis_wrapper(simiters, rawdata, dir = "~/temp/", root,
 the compiled stan model, which will be efficient for restarting iterations after
 checking first one(s) for diagnostics}
 
-\item{...}{ipsum}
+\item{...}{arguments to data analyst}
 }
 \description{
 lorem ipsum
