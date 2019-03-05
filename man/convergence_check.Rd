@@ -2,20 +2,20 @@
 % Please edit documentation in R/simfunctions.R
 \name{convergence_check}
 \alias{convergence_check}
-\title{lorem ipsum}
+\title{Check stan model fit for convergence}
 \usage{
 convergence_check(fit, ...)
 }
 \arguments{
-\item{fit}{ipsum}
+\item{fit}{unused}
 
-\item{...}{ipsum}
+\item{...}{unused}
 }
 \description{
-lorem ipsum
+Nothing here yet
 }
 \details{
-lorem ipsum
+Nothing here yet
 }
 \examples{
 runif(1)

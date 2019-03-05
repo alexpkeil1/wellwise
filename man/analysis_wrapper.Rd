@@ -5,7 +5,7 @@
 \title{lorem ipsum}
 \usage{
 analysis_wrapper(simiters, rawdata, dir = "~/temp/", root,
-  debug = FALSE, verbose = FALSE, type = "stan", ...)
+  debug = FALSE, verbose = FALSE, type = "stan", stanfit = NA, ...)
 }
 \arguments{
 \item{simiters}{1:2}
@@ -21,6 +21,10 @@ analysis_wrapper(simiters, rawdata, dir = "~/temp/", root,
 \item{verbose}{FALSE}
 
 \item{type}{'jags' or 'stan'}
+
+\item{stanfit}{NA or name of object containing a fitted stan model (re-uses
+the compiled stan model, which will be efficient for restarting iterations after
+checking first one(s) for diagnostics}
 
 \item{...}{ipsum}
 }

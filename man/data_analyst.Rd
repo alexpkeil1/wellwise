@@ -2,46 +2,53 @@
 % Please edit documentation in R/simfunctions.R
 \name{data_analyst}
 \alias{data_analyst}
-\title{lorem ipsum}
+\title{Fit a Stan/JAGS model in a single data set}
 \usage{
 data_analyst(i, raw = raw, fl = "~/temp.csv", s.code = NULL,
   s.file = NULL, iter = 2500, warmup = 500, chains = 4, p = NULL,
-  dx = NULL, N = NULL, verbose = FALSE, type = "stan", ...)
+  dx = NULL, N = NULL, verbose = FALSE, type = "stan",
+  stanfit = NA, ...)
 }
 \arguments{
-\item{i}{ipsum}
+\item{i}{iteration in simulated data}
 
-\item{raw}{ipsum}
+\item{raw}{data frame with raw data}
 
-\item{fl}{ipsum}
+\item{fl}{Filename to output model results for single run (useful for debugging)}
 
 \item{s.code}{name of a character string with a stan model}
 
-\item{s.file}{character name of a presepecified stan model ("wwbd_simtemplate_20190205", "wwbd_simlogistic_TransParameter_0211201920190211")}
+\item{s.file}{(experimental) character name of a presepecified stan model ("wwbd_simtemplate_20190205", "wwbd_simlogistic_TransParameter_0211201920190211")}
 
-\item{iter}{ipsum}
+\item{iter}{Number of "sweep" iterations, or iterations after the burnin/warmup}
 
-\item{warmup}{ipsum}
+\item{warmup}{warmup (stan) / n.adapt (jags). Number of iterations to allow
+for adaptation of MCMC parameters/burnin}
 
-\item{chains}{ipsum}
+\item{chains}{Number of parallel MCMC chains (default 4)}
 
-\item{p}{ipsum}
+\item{p}{number of beta parameters in outcome model (optional - R makes a guess)}
 
-\item{dx}{ipsum}
+\item{dx}{number of columns in data matrix (optional - R makes a guess)}
 
-\item{N}{ipsum}
+\item{N}{Sample size (optional - R makes a guess)}
 
-\item{verbose}{FALSE}
+\item{verbose}{print extra debugging info? FALSE}
 
-\item{type}{'stan' or 'jags'}
+\item{type}{Which type of model is it? Can be 'stan' or 'jags'}
 
-\item{...}{ipsum}
+\item{stanfit}{Name of stan_model or stan output that can be recycled. This
+will use a pre-compiled version of the stan code which cuts simulation time
+significantly over multiple runs.}
+
+\item{...}{arguments to stan() or coda.samples() for a Stan or JAGS model, 
+respectively}
 }
 \description{
-lorem ipsum
+Fit a Stan/JAGS model in a single data set
 }
 \details{
-lorem ipsum
+Fit a Stan/JAGS model in a single data set
 }
 \examples{
 runif(1)

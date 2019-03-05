@@ -8,19 +8,19 @@ data_reader(raw, i, expnm = c("Arsenic", "Manganese", "Lead", "Cadmium",
   "Copper"), p = 10, dx = 5, N = NULL, verbose = FALSE, ...)
 }
 \arguments{
-\item{raw}{ipsum}
+\item{raw}{data frame with raw data}
 
-\item{i}{ipsum}
+\item{i}{iteration of raw data to read}
 
-\item{expnm}{ipsum}
+\item{expnm}{character vector of exposure names}
 
-\item{p}{ipsum}
+\item{p}{number of beta parameters in outcome model (optional - R makes a guess)}
 
-\item{dx}{ipsum}
+\item{dx}{number of columns in data matrix (optional - R makes a guess)}
 
-\item{N}{ipsum}
+\item{N}{Sample size (optional - R makes a guess)}
 
-\item{verbose}{FALSE}
+\item{verbose}{print extra debugging info? FALSE}
 
 \item{...}{ipsum}
 }

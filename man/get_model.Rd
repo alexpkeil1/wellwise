@@ -17,3 +17,6 @@ lorem ipsum
 \details{
 lorem ipsum
 }
+\examples{
+runif(1)
+}

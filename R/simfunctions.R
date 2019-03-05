@@ -14,9 +14,14 @@ data_importer <- function(package=NULL, ...){
 #' runif(1)
   #require(readr)
   # read data and do elementary processing, take only single iteration of simulated data
-  cat("Reading in data from github\n")
-  welldata <- read_csv("https://cirl-unc.github.io/wellwater/data/testdata.csv", col_types = cols(), ...)
-  if(!is.null(package))load("https://cirl-unc.github.io/wellwise/tree/master/data/welldata.RData")
+  if(is.null(package)){
+    cat("Reading in data from github\n")
+    welldata <- read_csv("https://cirl-unc.github.io/wellwater/data/testdata.csv", col_types = cols(), ...)
+  }
+  if(!is.null(package)) {
+    cat(paste0("Reading in data from ", package, " package\n"))
+    data('welldata', package=package)
+  }
   welldata
   }
 
@@ -30,13 +35,13 @@ data_reader <- function(raw, i,
 #' @description lorem ipsum
 #' 
 #' @details lorem ipsum
-#' @param raw ipsum
-#' @param i ipsum
-#' @param expnm ipsum
-#' @param p ipsum
-#' @param dx ipsum
-#' @param N ipsum
-#' @param verbose FALSE
+#' @param raw data frame with raw data 
+#' @param i iteration of raw data to read
+#' @param expnm character vector of exposure names
+#' @param p number of beta parameters in outcome model (optional - R makes a guess)
+#' @param dx number of columns in data matrix (optional - R makes a guess)
+#' @param N Sample size (optional - R makes a guess)
+#' @param verbose print extra debugging info? FALSE
 #' @param ... ipsum
 #' @export
 #' @importFrom stats complete.cases
@@ -50,7 +55,6 @@ data_reader <- function(raw, i,
   #    c("iter", "y", expnm)
   #  ) %>%
   #  filter(complete.cases(.))
-  # todo: remove dependency on dplyr
   if(is.data.frame(raw)){
     dat <- raw[which(raw$iter == i), c("iter", "y", expnm), drop=FALSE]
   } else{
@@ -92,6 +96,7 @@ get_model <- function(filename='logistic.stan', ...){
 #' @importFrom readr read_file
 #' @export
 #' @examples
+#' runif(1)
  if(length(grep('.stan', filename))==0){
    filename=paste0(filename, ".stan")
    f = system.file('stan', filename, package='wellwise')
@@ -105,14 +110,13 @@ get_model <- function(filename='logistic.stan', ...){
 
 
 convergence_check <- function(fit, ...){
-#' @title lorem ipsum
+#' @title Check stan model fit for convergence
 #' 
-#' @description lorem ipsum
+#' @description Nothing here yet
 #' 
-#' @details lorem ipsum
-#' @param fit ipsum
-#' @param ... ipsum
-#' @export
+#' @details Nothing here yet
+#' @param fit unused
+#' @param ... unused
 #' @examples
 #' runif(1)
   #showMethods("summary")
@@ -132,27 +136,33 @@ data_analyst <- function(i,
                          N = NULL,
                          verbose=FALSE,
                          type='stan',
+                         stanfit=NA,
                          ...
                 ){
-#' @title lorem ipsum
+#' @title Fit a Stan/JAGS model in a single data set
 #' 
-#' @description lorem ipsum
+#' @description Fit a Stan/JAGS model in a single data set
 #' 
-#' @details lorem ipsum
-#' @param i ipsum
-#' @param raw ipsum
-#' @param fl ipsum
-#' @param s.code name of a character string with a stan model
-#' @param s.file character name of a presepecified stan model ("wwbd_simtemplate_20190205", "wwbd_simlogistic_TransParameter_0211201920190211")
-#' @param iter ipsum
-#' @param warmup ipsum
-#' @param chains ipsum
-#' @param p ipsum
-#' @param dx ipsum
-#' @param N ipsum
-#' @param verbose FALSE
-#' @param type 'stan' or 'jags'
-#' @param ... ipsum
+#' @details Fit a Stan/JAGS model in a single data set
+#' @param i iteration in simulated data
+#' @param raw data frame with raw data
+#' @param fl Filename to output model results for single run (useful for debugging)
+#' @param s.code name of a character string with a stan model 
+#' @param s.file (experimental) character name of a presepecified stan model ("wwbd_simtemplate_20190205", "wwbd_simlogistic_TransParameter_0211201920190211")
+#' @param iter Number of "sweep" iterations, or iterations after the burnin/warmup
+#' @param warmup warmup (stan) / n.adapt (jags). Number of iterations to allow
+#' for adaptation of MCMC parameters/burnin
+#' @param chains Number of parallel MCMC chains (default 4)
+#' @param p number of beta parameters in outcome model (optional - R makes a guess)
+#' @param dx number of columns in data matrix (optional - R makes a guess)
+#' @param N Sample size (optional - R makes a guess)
+#' @param verbose print extra debugging info? FALSE
+#' @param type Which type of model is it? Can be 'stan' or 'jags' 
+#' @param stanfit Name of stan_model or stan output that can be recycled. This
+#' will use a pre-compiled version of the stan code which cuts simulation time
+#' significantly over multiple runs.
+#' @param ... arguments to stan() or coda.samples() for a Stan or JAGS model, 
+#' respectively
 #' @export
 #' @import rstan rjags parallel doParallel foreach
 #' @importFrom  stringr str_length
@@ -160,9 +170,11 @@ data_analyst <- function(i,
 #' @importFrom  readr write_csv
 #' @examples
 #' runif(1)
-  #require(rstan)
+# TODO: implement garbage collection robust implementation of Stan such that
+#  the model fit is preserved across iterations
   # do single analysis of data
   #stan model
+  ncores = getOption("mc.cores")
   if(is.null(s.code) & is.null(s.file)) {
     if(verbose) cat("no stan model given, defaulting to logistic model with normal priors")
     s.code <- get_model('logistic')
@@ -181,52 +193,52 @@ data_analyst <- function(i,
   if(!is.null(s.file)){
     if(type=='stan'){
      res = stan(file = system.file("stan", paste0(s.file,".stan", package = "wellwise")), 
+             fit=stanfit,
              data = sdat, 
              chains = chains, 
              sample_file=fl, 
-             iter=iter, 
+             iter=iter+warmup, 
              warmup=warmup, 
              ...)
     }
     if(type=='jags'){
-      print("data_analyst: Jags model not yet implemented")
-      return(NULL)
+        tf = system.file("jags", paste0(s.file,".jags", package = "wellwise"))
     }
   } else if(!is.null(s.code)){
     if(type=='stan'){
-         res = stan(model_code = s.code, 
+         res = stan(model_code = s.code,
+             fit=stanfit,
              data = sdat, 
              chains = chains, 
              sample_file=fl, 
-             iter=iter, 
+             iter=iter+warmup, 
              warmup=warmup, 
              ...)
     }
     if(type=='jags'){
       tf=tempfile()
       cat(s.code, file=tf)
-      sds = parallel.seeds("base::BaseRNG", chains);
-      ncores = parallel::detectCores()
-      cl <- makeCluster(ncores)
-      registerDoParallel(cl)
-      res <- foreach(ch=1:chains, .packages=c('rjags')) %dopar%{
-        mod = jags.model(file = tf, data = sdat, n.chains=1,n.adapt=100,inits=sds[[ch]])
-        adapted = FALSE;aditer=1
-        if(!adapted & aditer<11){
-          adapted <- adapt(mod, n.iter=100, end.adaptation = adapted)
-          aditer=aditer+1
-        }
-        update(mod, n.iter=warmup, progress.bar='none')
-        ft = coda.samples(mod,variable.names='rd', # TODO: expand?
-                        n.iter=iter)
-        print(class(ft))
-        print(class(ft[[1]]))
-        ft[[1]] # outputs list by default, but just need MCMC object
-      }
-      stopCluster(cl)
-      res = as.mcmc.list(res)
-      write_csv(path=fl, as.data.frame(as.matrix(res)))
     }
+  }
+  if(type=='jags'){
+    sds = parallel.seeds("base::BaseRNG", chains);
+    cl <- makeCluster(ncores)
+    registerDoParallel(cl)
+    res <- foreach(ch=1:chains, .packages=c('rjags')) %dopar%{
+        mod = jags.model(file = tf, 
+                         data = sdat, 
+                         n.chains=1,
+                         n.adapt=warmup,
+                         inits=sds[[ch]])
+        resl = coda.samples(mod,
+                          variable.names='rd', # TODO: expand?
+                          n.iter=iter, 
+                          ...)
+        resl[[1]] # outputs list by default, but just need MCMC object
+    }
+    stopCluster(cl)
+    res = as.mcmc.list(res)
+    write_csv(path=fl, as.data.frame(as.matrix(res)))
   }
   #step to include here: automated monitoring for convergence and continued sampling if not converged
   #class(res) <- 'bgfsimmod'
@@ -261,6 +273,7 @@ analysis_wrapper <- function(simiters,
                              debug=FALSE, 
                              verbose=FALSE,
                              type='stan',
+                             stanfit=NA,
                              ...
                              ){
 #' @title lorem ipsum
@@ -275,6 +288,9 @@ analysis_wrapper <- function(simiters,
 #' @param debug FALSE
 #' @param verbose FALSE
 #' @param type 'jags' or 'stan'
+#' @param stanfit NA or name of object containing a fitted stan model (re-uses
+#' the compiled stan model, which will be efficient for restarting iterations after
+#' checking first one(s) for diagnostics
 #' @param ... ipsum
 #' @export
 #' @examples
@@ -294,15 +310,23 @@ analysis_wrapper <- function(simiters,
     outfile = "samples.csv"
     cat(paste0("Outputting samples from stan to ", outfile))
   }
-  if(verbose) cat(paste0("Analyzing data ", length(sq), " times\n"))
+  if(verbose) cat(paste0("Analyzing ", length(sq), " iterations of data\n"))
   if(verbose) cat(paste0("R output can be seen at ", paste0(dir, root, "_rmsg.txt"), "\n"))
   res = list(1:length(sq))
   j=1
-  filenm = file(paste0(dir, root, "rmsg.txt"), 'w')
+  filenm = file(paste0(dir, root, "_rmsg.txt"), 'w')
   sink(filenm, split = FALSE, type = c("output", "message"))
+  cat(paste0("Analyzing ", length(sq), " iterations of data\n"))
   for(i in sq){
     cat(".")
-    res[[j]] = data_analyst(i, rawdata, fl=outfile, verbose=verbose, type=type, ...)
+    if(type=='stan'){
+      res[[j]] = data_analyst(i, rawdata, fl=outfile, verbose=verbose, type=type, 
+                              stanfit=stanfit, ...)
+      if(j==1) stanfit <- res[[1]] # safe file for later
+    }
+    if(type=='jags'){
+      res[[j]] = data_analyst(i, rawdata, fl=outfile, verbose=verbose, type=type, ...)
+    }
     j=j+1
   }
   sink.reset()

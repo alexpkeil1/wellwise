@@ -1,33 +1,35 @@
 data {
-  Arsenic = X[,1]
-  Manganese = X[,2]
-  Lead = X[,3]
-  Cadmium = X[,4]
-  Copper = X[,5]
-  intprop[1,1:5] = c(0.98,0.98,0.98,0.98,0)
-  intprop[2,1:5] = c(0,0.985,0,0.965,0)
-  intprop[3,1:5] = c(0,0.918,0,0,0)
-  intprop[4,1:5] = c(0.994,0.98,0.98,0.987,0)
-  intprop[5,1:5] = c(0,0,0,0.99,0)
+  Arsenic <- X[,1]
+  Manganese <- X[,2]
+  Lead <- X[,3]
+  Cadmium <- X[,4]
+  Copper <- X[,5]
+  intprop[1,1:5] <- c(0.98,0.98,0.98,0.98,0)
+  intprop[2,1:5] <- c(0,0.985,0,0.965,0)
+  intprop[3,1:5] <- c(0,0.918,0,0,0)
+  intprop[4,1:5] <- c(0.994,0.98,0.98,0.987,0)
+  intprop[5,1:5] <- c(0,0,0,0.99,0)
 }# end data
 model {
   for(i in 1:N){
     y[i] ~ dbern(mu[i]);
-    mu[i] = ilogit(beta0 + beta[1]*Arsenic[i] + beta[2]*Manganese[i] + beta[3]*Lead[i] +
+    mu[i] <- ilogit(beta0 + beta[1]*Arsenic[i] + beta[2]*Manganese[i] + beta[3]*Lead[i] +
             beta[4]*Cadmium[i] + beta[5]*Copper[i]);
     for(j in 1:5){
-      r1[i,j] = ilogit(beta0 + beta[1]*(1-intprop[j,1])*Arsenic[i] + beta[2]*(1-intprop[j,
+      r1[i,j] <- ilogit(beta0 + beta[1]*(1-intprop[j,1])*Arsenic[i] + beta[2]*(1-intprop[j,
             2])*Manganese[i] + beta[3]*(1-intprop[j,3])*Lead[i] + beta[4]*(1-
             intprop[j,4])*Cadmium[i] + beta[5]*(1-intprop[j,5])*Copper[i]);
     }#j
   }#i
   for(j in 1:5){
-    rd[j]= mean(r1[,j])-mean(mu)
+    rd[j] <- mean(r1[,j])-mean(mu)
   }#j
   beta0 ~ dnorm(0, 10);
   for(m in 1:p){
-    beta[m] ~ dnorm(0, 1);
+    beta[m] ~ dnorm(mub, 1/(sigb^2));
   }#m
+  mub ~ dnorm(0, 5);
+  sigb ~ dt(0, 1, 1) T(0,);
 # end model
 }
 
