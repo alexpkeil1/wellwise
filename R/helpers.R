@@ -76,6 +76,25 @@ trimints <- function(trimvars, terms){
 }
 
 
+make_fullrmod <- function(terms, intvars, binvars=NULL){
+#' @title make a model to use in model.matrix
+#' 
+#' @description lorem ipsum
+#' 
+#' @details lorem ipsum
+#' @param terms ipsum
+#' @param intvars ipsum
+#' @param binvars ipsum
+#' @export
+#' @examples
+#' runif(1)
+ mod <- paste(terms, collapse = " + ")
+ mod2 <- mkints(terms=expnms, intvars=expnms, binvars=NULL)
+ f = paste("~ -1 + ", mod, " + ", gsub(' ', ' + ', gsub('\\.', '', mod2)), collapse=' + ')
+ f = gsub("([A-Za-z]+)\\*([A-Za-z]+)", "I(\\1*\\2)", f)
+ as.formula(f)
+}
+
 
 
 #create a model based on generic terms (mkmodidx probably better)

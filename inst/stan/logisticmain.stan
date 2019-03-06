@@ -17,22 +17,21 @@
    parameters{
     vector[p] b_;
     //vector[p] beta;
-    //real<lower=0> sig_b; 
+    real<lower=0> sig_b; 
     real mu_b;
     real b0; // given uniform prior
    }
    transformed parameters{
-     vector[p] beta = b_ * 100 + mu_b;
+     vector[p] beta = b_ * sig_b + mu_b;
    }
    model{
    {
      vector[N] mu;
         mu_b ~ normal(0, 5);
         //sig_b ~ cauchy(0, 0.9);// divergent with half cauchy(0,1), cauchy(0,0.9), ok with 0.1
-        //sig_b ~ student_t(25, 0, 1.0);// divergent at df < 25
+        sig_b ~ student_t(1, 0, 1.0);// divergent at df < 25
         //sig_b ~ inv_gamma(10, 1);// non-divergent
-        // removing sig_b seems ok, but shrinkage over beta probably necessary
-        b_ ~ normal(0, 1); 
+        b_ ~ normal(0, 1);
         //beta ~ normal(0, 1); //works
         //beta ~ normal(0, sig_b);// divergent with half cauchy(0,1)
         //beta ~ normal(mu_b, 1);// works

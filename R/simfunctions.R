@@ -382,8 +382,9 @@ analysis_wrapper <- function(simiters,
     }
     j=j+1
   }
-  sink.reset()
+  #
   close(filenm)
+  sink.reset()
   cat("\n")
   class(res) <- 'bgfsimmodlist'
   res
