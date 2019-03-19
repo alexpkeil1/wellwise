@@ -383,9 +383,9 @@ analysis_wrapper <- function(simiters,
     j=j+1
   }
   #
-  close(filenm)
   sink.reset()
-  cat("\n")
+  close(filenm)
+  cat(paste("\nLog in ", filenm))
   class(res) <- 'bgfsimmodlist'
   res
 }
