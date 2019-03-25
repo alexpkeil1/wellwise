@@ -9,6 +9,7 @@ data_importer <- function(package=NULL, ...){
 #' @param package import data from a specific package (NULL or 'wellwise')
 #' @param ... ipsum
 #' @importFrom readr read_csv cols
+#' @importFrom utils data
 #' @export
 #' @examples
 #' runif(1)
@@ -377,6 +378,7 @@ analysis_wrapper <- function(simiters,
                               stanfit=stanfit, ...)
       if(j==1) stanfit <- res[[1]] # safe file for later
     }
+    # TODO: ADD type='gibbs' (alex to send example of gibbs sampler)
     if(type=='jags'){
       res[[j]] = data_analyst(i, rawdata, fl=outfile, verbose=verbose, type=type, ...)
     }

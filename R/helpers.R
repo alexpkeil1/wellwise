@@ -86,10 +86,11 @@ make_fullrmod <- function(terms, intvars, binvars=NULL){
 #' @param intvars ipsum
 #' @param binvars ipsum
 #' @export
+#' @importFrom stats as.formula
 #' @examples
 #' runif(1)
  mod <- paste(terms, collapse = " + ")
- mod2 <- mkints(terms=expnms, intvars=expnms, binvars=NULL)
+ mod2 <- mkints(terms=terms, intvars=terms, binvars=NULL)
  f = paste("~ -1 + ", mod, " + ", gsub(' ', ' + ', gsub('\\.', '', mod2)), collapse=' + ')
  f = gsub("([A-Za-z]+)\\*([A-Za-z]+)", "I(\\1*\\2)", f)
  as.formula(f)
@@ -119,6 +120,24 @@ if(catmod) cat( "\n", mod, "\n\n")
 return(mod)
 }
 
+mkdesignR <- function(terms, catmod=FALSE){
+#' @title lorem ipsum
+#' 
+#' @description lorem ipsum
+#' 
+#' @details lorem ipsum
+#' @param terms ipsum
+#' @param catmod ipsum
+#' @export
+#' @examples
+#' runif(1)
+ mod <- paste0("rep(1,n)")
+ for(i in 1:length(terms)){
+   mod <- paste0(mod, ", ", gsub("\\.","",terms[i]))
+ }
+if(catmod) cat( "\n", mod, "\n\n")
+return(mod)
+}
 
 #create a model based on generic terms, including interactions, and output model as a string
 mkmodidx <- function(coef, terms, start=1, index="i", print=FALSE, indexed=FALSE){
@@ -169,6 +188,27 @@ mkintervention <- function(mod, vars, subs){
   var <- vars[i]
   sub <- subs[i]
    mod <- gsub(paste0(var, "([\\[ -])"), paste0(sub, "\\1"), paste0(mod, " "))
+ }
+ trim(mod)
+}
+
+
+mkinterventionR <- function(mod, vars, subs){
+#' @title lorem ipsum
+#' 
+#' @description lorem ipsum
+#' 
+#' @details lorem ipsum
+#' @param mod ipsum
+#' @param vars ipsum
+#' @param subs ipsum
+#' @export
+#' @examples
+#' runif(1)
+ for(i in 1:length(vars)){
+  var <- vars[i]
+  sub <- subs[i]
+   mod <- gsub(paste0(var), paste0(sub), paste0(mod, ""))
  }
  trim(mod)
 }
@@ -265,9 +305,13 @@ stan_basic <- function(x=c('x', 'z'),
        tdata = paste0(tdata, paste0("\n  vector[N] cen_", x[ix], ";"))
        tdata = paste0(tdata, paste0("\n  real m", x[ix], " = mean(", x[ix], ");"))
        tdata = paste0(tdata, paste0("\n  real s", x[ix], " = sd(", x[ix], ");"))
-       tdata = paste0(tdata, paste0("\n  cen_", x[ix], " = (", x[ix] ,"-m",x[ix] ,") ./ s",x[ix],";"))
       }
      }
+     for(ix in 1:length(x)){
+      if(!(x[ix] %in% binvars)){
+       tdata = paste0(tdata, paste0("\n  cen_", x[ix], " = (", x[ix] ,"-m",x[ix] ,") ./ s",x[ix],";"))
+      }
+     }     
      ox = x # original x
      xs = x
      for(ix in 1:length(x)){
@@ -487,5 +531,105 @@ jags_basic <- function(x=c('x', 'z'),
   paste(data, model, sep = "\n")
 }
 
+
+
+gibbs_basic <- function(x=c('x', 'z'),
+                       z=c('bmi'),
+                       y='y',
+                       binvars = NULL,
+                       matx="X",
+                       standardizex=TRUE,
+                       binary=TRUE,
+                       #vectorized=FALSE,
+                       xintv=rbind(c(.99, 0),c(0, .99),c(.99, .99))){
+#' @title make a basic jags model
+#' 
+#' @description lorem ipsum
+#' 
+#' @details lorem ipsum
+#' @param x intervenable exposures (character vector)
+#' @param z covariates (character vector)
+#' @param y outcome
+#' @param binvars = non-outcome variables that are binary (character vector)
+#' @param matx optional, name of matrix with intervenable exposures
+#' @param standardizex logical, should x be standardized?
+#' @param binary logical, is outcome binary?
+#' @param xintv matrix with ncol = number of intervenable exposures, nrow = number of interventions. Each value is on [0,1] and represents the proportional decrease in the value of x upon hypothetical intervention
+#' @importFrom stringr str_split str_wrap
+#' @export
+#' @examples
+#' # library(rjags)
+#'  dgm <- function(N=100, trueRD=0.2){
+#'    x1 = rbinom(N, 1, 0.5)
+#'    py00 = runif(N)*0.1 + 0.4
+#'    l2 = rbinom(N, 1, 1/(1+exp(-1 + x1 + py00)))
+#'    x2 = rbinom(N, 1, 1/(1+exp(-1 + x1 + l2)))
+#'    py = py00 + trueRD*((x1 + x2)/2) #true risk difference per unit exposure;
+#'    y = rbinom(N, 1, py)
+#'    data.frame(x1, l2, x2, y)
+#'  }
+#'  dat = as.list(dgm(100))
+#'  dat$N = 100
+#'  dat$p = 5
+#'  
+#'  source("~/Epiprojects/wellwater/sims/code/make_stan_terms.R")
+#'  
+#'  mod = jags_basic(x=c('x1', 'x2'), z = 'l2', y='y', binvars=c('x1', 'x2', 'l2'), xintv = rbind(c(1,0), c(0,1),c(1,1)), binary=TRUE, matx = NULL)
+#'  cat(mod)
+#' # usage in jags (or edit by hand)
+#' # not run
+#' # tf = tempfile()
+#' # cat(mod, file=tf)
+#' # jags.model(file = tf, data = dat, n.chains=1)
+  data <- ''
+  model <-  ''
+  
+  if(!is.null(matx)){
+    j = 1
+    for(n in x) {
+      data = paste0(data, "\n  ", n, " <- ", matx, "[,",j,"]")
+      j=j+1
+    }
+  }
+
+  intx = str_split(mkints(terms=c(x,z), intvars=c(x,z), binvars=binvars), " ")[[1]]
+  intx = gsub("//.", "", intx)
+  #likelihood
+  mucode <- mkdesignR(terms=c(c(x,z), intx))
+
+  model = paste0(model, '\n    Xi = cbind(', str_wrap(mucode, 80, exdent=8), ');')
+  # interventions
+   if(!standardizex){
+     ox=x
+     xs=x
+   }   
+   if(standardizex){
+     # do nothing, for now
+     ox=x
+     xs=x
+   }   
+
+  if(is.null(xintv)) xintv = rbind(rep(0, length(x)))
+  for(ridx in 1:nrow(xintv)){
+    data = paste0(data,'\n  intprop[', ridx, ',1:',ncol(xintv),'] = c(',paste0(xintv[ridx,], collapse=',') ,')')    
+  }
+  subs = sapply(1:ncol(xintv), function(i) paste0('(1-intprop[j,', i, '])*',ox[i],''))
+  ints = mkinterventionR(mucode, vars=ox, subs=c(subs)) 
+  #intervention code
+   model = paste0(model, '\n    for(j in 1:',nrow(xintv), '){' )
+   model = paste0(model, '\n      Xil[j] = cbind(', str_wrap(ints, 80, exdent=10), ');')
+   model = paste0(model, '\n    }#j')
+  
+  model = paste0(model, '\n  for(j in 1:',nrow(xintv), '){' )
+  model = paste0(model, '\n    rd[j]= mean(r1[,j])-mean(mu)')
+  model = paste0(model, '\n  }#j')
+  #priors
+
+  data <- paste0(data, '\n# end data')
+  model <- paste0(model, '\n# end model\n}')
+  paste(data, model, sep = "\n")
+}
+
 #cat(jags_basic(x=names(full), z=NULL, y='y', binary = TRUE, matx="X", xintv = NULL, standardizex = FALSE))
+#cat(gibbs_basic(x=names(full), z=NULL, y='y', binary = TRUE, matx="X", xintv = NULL, standardizex = FALSE))
 

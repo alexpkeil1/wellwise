@@ -47,7 +47,7 @@ transformed parameters{
   vector[p] beta;
   {
    vector[p] lambda_t;
-   lambda_t = sqrt(Csq) * lambda) ./ sqrt( Csq + tau * lambda .* lambda ));
+   lambda_t = sqrt( Csq * lambda ) ./ sqrt( Csq + tau * lambda .* lambda );
    beta = tau * lambda_t .* b_;
   }
 }
