@@ -5,4 +5,4 @@
 
 
 
-wellwise v0.4.5
+wellwise v0.4.6
