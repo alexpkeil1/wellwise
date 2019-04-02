@@ -10,17 +10,18 @@ data_importer <- function(package=NULL, ...){
 #' @details lorem ipsum
 #' @param package import data from a specific package (NULL or 'wellwise')
 #' @param ... ipsum
-#' @import readr
-#' @importFrom utils data
+#' @importFrom utils data read.csv
 #' @export
 #' @examples
 #' runif(1)
+# #' @import readr
   #require(readr)
   # read data and do elementary processing, take only single iteration of simulated data
   e = new.env()
   if(is.null(package)){
     cat("Reading in data from github\n")
-    e$welldata <- read_csv("https://cirl-unc.github.io/wellwater/data/testdata.csv", col_types = cols(), ...)
+    #e$welldata <- read_csv("https://cirl-unc.github.io/wellwater/data/testdata.csv", col_types = cols(), ...)
+    e$welldata <- read.csv("https://cirl-unc.github.io/wellwater/data/testdata.csv")
   }
   if(!is.null(package)) {
     cat(paste0("Reading in data from ", package, " package\n"))

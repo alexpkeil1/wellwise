@@ -1,6 +1,6 @@
 Package: wellwise
 Title: WELL Water, Infants, and a Safe Environment: simulations
-Version: 0.4.8
+Version: 0.4.9
 Date: 2019-04-02
 Authors@R: 
     person(given = "Alexander",
