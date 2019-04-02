@@ -3,7 +3,7 @@
 \name{print}
 \alias{print}
 \alias{print.bgfsimres}
-\title{lorem ipsum}
+\title{Print function for summarized simulation results}
 \usage{
 \method{print}{bgfsimres}(x, ...)
 }

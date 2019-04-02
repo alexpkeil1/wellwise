@@ -2,7 +2,7 @@
 % Please edit documentation in R/simfunctions.R
 \name{data_importer}
 \alias{data_importer}
-\title{lorem ipsum}
+\title{bring in raw well data}
 \usage{
 data_importer(package = NULL, ...)
 }
@@ -12,7 +12,7 @@ data_importer(package = NULL, ...)
 \item{...}{ipsum}
 }
 \description{
-lorem ipsum
+bring in raw well data from github or R package
 }
 \details{
 lorem ipsum

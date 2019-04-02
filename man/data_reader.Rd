@@ -2,7 +2,7 @@
 % Please edit documentation in R/simfunctions.R
 \name{data_reader}
 \alias{data_reader}
-\title{lorem ipsum}
+\title{Create data in form usable for Bayesian models}
 \usage{
 data_reader(raw, i, expnm = c("Arsenic", "Manganese", "Lead", "Cadmium",
   "Copper"), p = 10, dx = 5, N = NULL, verbose = FALSE, ...)

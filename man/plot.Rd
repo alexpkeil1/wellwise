@@ -3,7 +3,7 @@
 \name{plot}
 \alias{plot}
 \alias{plot.bgfsimres}
-\title{lorem ipsum}
+\title{Plot function for summarized results}
 \usage{
 \method{plot}{bgfsimres}(x, type = ifelse(nrow(x$postmeans) > 50,
   "density", "hist"), ...)

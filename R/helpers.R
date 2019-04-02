@@ -1,9 +1,9 @@
 
 #helper function
 trim <- function (x){
-#' @title lorem ipsum
+#' @title helper: Remove whitespace in a string 
 #' 
-#' @description lorem ipsum
+#' @description not used by user, typically
 #' 
 #' @details lorem ipsum
 #' @param x ipsum
@@ -15,9 +15,9 @@ trim <- function (x){
 
 #helper function
 sortstring <- function(s){
-#' @title lorem ipsum
+#' @title helper: Sort the words in a character string
 #' 
-#' @description lorem ipsum
+#' @description not used by user, typically
 #' 
 #' @details lorem ipsum
 #' @param s ipsum
@@ -29,9 +29,9 @@ sortstring <- function(s){
   
 #create interaction terms
 mkints <- function(terms, intvars, binvars){
-#' @title lorem ipsum
+#' @title helper: lorem ipsum
 #' 
-#' @description lorem ipsum
+#' @description not used by user, typically
 #' 
 #' @details lorem ipsum
 #' @param terms ipsum
@@ -57,9 +57,9 @@ mkints <- function(terms, intvars, binvars){
 
 #trim some self-interaction variables (say x*x if x is binary)
 trimints <- function(trimvars, terms){
-#' @title lorem ipsum
+#' @title helper: lorem ipsum
 #' 
-#' @description lorem ipsum
+#' @description not used by user, typically
 #' 
 #' @details lorem ipsum
 #' @param trimvars ipsum
@@ -77,11 +77,11 @@ trimints <- function(trimvars, terms){
 
 
 make_fullrmod <- function(terms, intvars, binvars=NULL){
-#' @title make a model to use in model.matrix
+#' @title helper: make a model to use in model.matrix
 #' 
-#' @description lorem ipsum
+#' @description not used by user, typically
 #' 
-#' @details lorem ipsum
+#' @details Creates an R formula given a set of terms and interaction variables
 #' @param terms ipsum
 #' @param intvars ipsum
 #' @param binvars ipsum
@@ -90,7 +90,7 @@ make_fullrmod <- function(terms, intvars, binvars=NULL){
 #' @examples
 #' runif(1)
  mod <- paste(terms, collapse = " + ")
- mod2 <- mkints(terms=terms, intvars=terms, binvars=NULL)
+ mod2 <- mkints(terms=terms, intvars=intvars, binvars=NULL)
  f = paste("~ -1 + ", mod, " + ", gsub(' ', ' + ', gsub('\\.', '', mod2)), collapse=' + ')
  f = gsub("([A-Za-z]+)\\*([A-Za-z]+)", "I(\\1*\\2)", f)
  as.formula(f)
@@ -100,11 +100,11 @@ make_fullrmod <- function(terms, intvars, binvars=NULL){
 
 #create a model based on generic terms (mkmodidx probably better)
 mkmod <- function(coef, terms, start=1, catmod=FALSE){
-#' @title lorem ipsum
+#' @title helper: create a model based on generic terms 
 #' 
-#' @description lorem ipsum
+#' @description not used by user, typically
 #' 
-#' @details lorem ipsum
+#' @details (mkmodidx probably better)
 #' @param coef ipsum
 #' @param terms ipsum
 #' @param start ipsum
@@ -121,9 +121,9 @@ return(mod)
 }
 
 mkdesignR <- function(terms, catmod=FALSE){
-#' @title lorem ipsum
+#' @title helper: Create code for a design matrix
 #' 
-#' @description lorem ipsum
+#' @description not used by user, typically
 #' 
 #' @details lorem ipsum
 #' @param terms ipsum
@@ -141,11 +141,12 @@ return(mod)
 
 #create a model based on generic terms, including interactions, and output model as a string
 mkmodidx <- function(coef, terms, start=1, index="i", print=FALSE, indexed=FALSE){
-#' @title lorem ipsum
+#' @title helper: create a model based on generic terms, 
 #' 
-#' @description lorem ipsum
+#' @description not used by user, typically
 #' 
-#' @details lorem ipsum
+#' @details including interactions, and output model as a string - preferred way
+#'  to make stan model code
 #' @param coef ipsum
 #' @param terms ipsum
 #' @param start ipsum
@@ -173,9 +174,9 @@ mkmodidx <- function(coef, terms, start=1, index="i", print=FALSE, indexed=FALSE
 }
 
 mkintervention <- function(mod, vars, subs){
-#' @title lorem ipsum
+#' @title helper: create stan code that encodes an intervention in g-computation
 #' 
-#' @description lorem ipsum
+#' @description not used by user, typically
 #' 
 #' @details lorem ipsum
 #' @param mod ipsum
@@ -194,14 +195,14 @@ mkintervention <- function(mod, vars, subs){
 
 
 mkinterventionR <- function(mod, vars, subs){
-#' @title lorem ipsum
+#' @title helper: create R code that encodes an intervention in g-computation
 #' 
-#' @description lorem ipsum
+#' @description not used by user, typically
 #' 
 #' @details lorem ipsum
-#' @param mod ipsum
-#' @param vars ipsum
-#' @param subs ipsum
+#' @param mod existing model code
+#' @param vars variable names to intervene on
+#' @param subs intervention values
 #' @export
 #' @examples
 #' runif(1)
@@ -223,9 +224,9 @@ stan_basic <- function(x=c('x', 'z'),
                        binary=TRUE,
                        vectorized=FALSE,
                        xintv=rbind(c(.99, 0),c(0, .99),c(.99, .99))){
-#' @title make a basic stan model
+#' @title helper: make a basic stan model
 #' 
-#' @description lorem ipsum
+#' @description not used by user, typically
 #' 
 #' @details lorem ipsum
 #' @param x intervenable exposures (character vector)
@@ -426,9 +427,9 @@ jags_basic <- function(x=c('x', 'z'),
                        binary=TRUE,
                        #vectorized=FALSE,
                        xintv=rbind(c(.99, 0),c(0, .99),c(.99, .99))){
-#' @title make a basic jags model
+#' @title helper: make a basic jags model
 #' 
-#' @description lorem ipsum
+#' @description not used by user, typically
 #' 
 #' @details lorem ipsum
 #' @param x intervenable exposures (character vector)
@@ -546,9 +547,9 @@ gibbs_basic <- function(x=c('x', 'z'),
                        binary=TRUE,
                        #vectorized=FALSE,
                        xintv=rbind(c(.99, 0),c(0, .99),c(.99, .99))){
-#' @title make a basic jags model
+#' @title helper: make basic gibbs sampler code (incomplete)
 #' 
-#' @description lorem ipsum
+#' @description not used by user, typically
 #' 
 #' @details lorem ipsum
 #' @param x intervenable exposures (character vector)

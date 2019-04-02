@@ -3,9 +3,9 @@
 # functions
 #######################
 data_importer <- function(package=NULL, ...){
-#' @title lorem ipsum
+#' @title bring in raw well data
 #' 
-#' @description lorem ipsum
+#' @description bring in raw well data from github or R package
 #' 
 #' @details lorem ipsum
 #' @param package import data from a specific package (NULL or 'wellwise')
@@ -34,7 +34,7 @@ data_reader <- function(raw, i,
                         p=10, dx=5, N=NULL,
                         verbose=FALSE,
                         ...){
-#' @title lorem ipsum
+#' @title Create data in form usable for Bayesian models
 #' 
 #' @description lorem ipsum
 #' 
@@ -89,7 +89,7 @@ data_reader <- function(raw, i,
 }
 
 get_model <- function(filename='logistic.stan', ...){
-#' @title lorem ipsum
+#' @title Get an existing model from the wellwise package
 #' 
 #' @description lorem ipsum
 #' 
@@ -113,7 +113,7 @@ get_model <- function(filename='logistic.stan', ...){
 
 
 convergence_check <- function(fit, ...){
-#' @title Check stan model fit for convergence
+#' @title Check stan model fit for convergence (not yet implemented)
 #' 
 #' @description Nothing here yet
 #' 
@@ -334,14 +334,14 @@ analysis_wrapper <- function(simiters,
                              stanfit=NA,
                              ...
                              ){
-#' @title lorem ipsum
+#' @title User level function to run multiple simulation iterations
 #' 
 #' @description lorem ipsum
 #' 
 #' @details lorem ipsum
-#' @param simiters 1:2
+#' @param simiters e.g. 1:2
 #' @param rawdata RAW
-#' @param dir "~/temp/"
+#' @param dir output directory for intermediate files, which can usually be ignored "~/temp/"
 #' @param root "test"
 #' @param debug FALSE
 #' @param verbose FALSE
@@ -401,7 +401,7 @@ summary.bgfsimmodlist <- function(
   ...
   ){
 #' @name summary
-#' @title lorem ipsum
+#' @title Summarize results of multiple simulations
 #' 
 #' @description lorem ipsum
 #' 
@@ -456,7 +456,7 @@ summary.bgfsimmodlist <- function(
 
 print.bgfsimres <- function(x, ...){
 #' @name print
-#' @title lorem ipsum
+#' @title Print function for summarized simulation results
 #' 
 #' @description lorem ipsum
 #' 
@@ -473,7 +473,7 @@ print.bgfsimres <- function(x, ...){
 
 plot.bgfsimres <- function(x, type=ifelse(nrow(x$postmeans)>50, "density", "hist"), ...){
 #' @name plot
-#' @title lorem ipsum
+#' @title Plot function for summarized results
 #' 
 #' @description lorem ipsum
 #' 

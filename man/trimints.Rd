@@ -2,7 +2,7 @@
 % Please edit documentation in R/helpers.R
 \name{trimints}
 \alias{trimints}
-\title{lorem ipsum}
+\title{helper: lorem ipsum}
 \usage{
 trimints(trimvars, terms)
 }
@@ -12,7 +12,7 @@ trimints(trimvars, terms)
 \item{terms}{ipsum}
 }
 \description{
-lorem ipsum
+not used by user, typically
 }
 \details{
 lorem ipsum

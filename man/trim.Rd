@@ -2,7 +2,7 @@
 % Please edit documentation in R/helpers.R
 \name{trim}
 \alias{trim}
-\title{lorem ipsum}
+\title{helper: Remove whitespace in a string}
 \usage{
 trim(x)
 }
@@ -10,7 +10,7 @@ trim(x)
 \item{x}{ipsum}
 }
 \description{
-lorem ipsum
+not used by user, typically
 }
 \details{
 lorem ipsum

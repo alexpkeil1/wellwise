@@ -2,7 +2,7 @@
 % Please edit documentation in R/helpers.R
 \name{jags_basic}
 \alias{jags_basic}
-\title{make a basic jags model}
+\title{helper: make a basic jags model}
 \usage{
 jags_basic(x = c("x", "z"), z = c("bmi"), y = "y", binvars = NULL,
   matx = "X", standardizex = TRUE, binary = TRUE,
@@ -26,7 +26,7 @@ jags_basic(x = c("x", "z"), z = c("bmi"), y = "y", binvars = NULL,
 \item{xintv}{matrix with ncol = number of intervenable exposures, nrow = number of interventions. Each value is on [0,1] and represents the proportional decrease in the value of x upon hypothetical intervention}
 }
 \description{
-lorem ipsum
+not used by user, typically
 }
 \details{
 lorem ipsum

@@ -2,7 +2,7 @@
 % Please edit documentation in R/helpers.R
 \name{mkintervention}
 \alias{mkintervention}
-\title{lorem ipsum}
+\title{helper: create stan code that encodes an intervention in g-computation}
 \usage{
 mkintervention(mod, vars, subs)
 }
@@ -14,7 +14,7 @@ mkintervention(mod, vars, subs)
 \item{subs}{ipsum}
 }
 \description{
-lorem ipsum
+not used by user, typically
 }
 \details{
 lorem ipsum

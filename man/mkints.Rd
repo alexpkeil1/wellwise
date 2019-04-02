@@ -2,7 +2,7 @@
 % Please edit documentation in R/helpers.R
 \name{mkints}
 \alias{mkints}
-\title{lorem ipsum}
+\title{helper: lorem ipsum}
 \usage{
 mkints(terms, intvars, binvars)
 }
@@ -14,7 +14,7 @@ mkints(terms, intvars, binvars)
 \item{binvars}{binary variables (character vector) which are excluded to avoid meaningless self-interactions}
 }
 \description{
-lorem ipsum
+not used by user, typically
 }
 \details{
 lorem ipsum

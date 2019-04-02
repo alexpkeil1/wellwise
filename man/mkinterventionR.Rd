@@ -2,19 +2,19 @@
 % Please edit documentation in R/helpers.R
 \name{mkinterventionR}
 \alias{mkinterventionR}
-\title{lorem ipsum}
+\title{helper: create R code that encodes an intervention in g-computation}
 \usage{
 mkinterventionR(mod, vars, subs)
 }
 \arguments{
-\item{mod}{ipsum}
+\item{mod}{existing model code}
 
-\item{vars}{ipsum}
+\item{vars}{variable names to intervene on}
 
-\item{subs}{ipsum}
+\item{subs}{intervention values}
 }
 \description{
-lorem ipsum
+not used by user, typically
 }
 \details{
 lorem ipsum

@@ -2,7 +2,7 @@
 % Please edit documentation in R/helpers.R
 \name{sortstring}
 \alias{sortstring}
-\title{lorem ipsum}
+\title{helper: Sort the words in a character string}
 \usage{
 sortstring(s)
 }
@@ -10,7 +10,7 @@ sortstring(s)
 \item{s}{ipsum}
 }
 \description{
-lorem ipsum
+not used by user, typically
 }
 \details{
 lorem ipsum

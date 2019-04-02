@@ -2,17 +2,17 @@
 % Please edit documentation in R/simfunctions.R
 \name{analysis_wrapper}
 \alias{analysis_wrapper}
-\title{lorem ipsum}
+\title{User level function to run multiple simulation iterations}
 \usage{
 analysis_wrapper(simiters, rawdata, dir = "~/temp/", root,
   debug = FALSE, verbose = FALSE, type = "stan", stanfit = NA, ...)
 }
 \arguments{
-\item{simiters}{1:2}
+\item{simiters}{e.g. 1:2}
 
 \item{rawdata}{RAW}
 
-\item{dir}{"~/temp/"}
+\item{dir}{output directory for intermediate files, which can usually be ignored "~/temp/"}
 
 \item{root}{"test"}
 

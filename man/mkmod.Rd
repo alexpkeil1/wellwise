@@ -2,7 +2,7 @@
 % Please edit documentation in R/helpers.R
 \name{mkmod}
 \alias{mkmod}
-\title{lorem ipsum}
+\title{helper: create a model based on generic terms}
 \usage{
 mkmod(coef, terms, start = 1, catmod = FALSE)
 }
@@ -16,10 +16,10 @@ mkmod(coef, terms, start = 1, catmod = FALSE)
 \item{catmod}{ipsum}
 }
 \description{
-lorem ipsum
+not used by user, typically
 }
 \details{
-lorem ipsum
+(mkmodidx probably better)
 }
 \examples{
 runif(1)

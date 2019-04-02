@@ -2,7 +2,7 @@
 % Please edit documentation in R/helpers.R
 \name{stan_basic}
 \alias{stan_basic}
-\title{make a basic stan model}
+\title{helper: make a basic stan model}
 \usage{
 stan_basic(x = c("x", "z"), z = c("bmi"), y = "y", binvars = NULL,
   matx = "X", standardizex = TRUE, binary = TRUE,
@@ -29,7 +29,7 @@ stan_basic(x = c("x", "z"), z = c("bmi"), y = "y", binvars = NULL,
 \item{xintv}{matrix with ncol = number of intervenable exposures, nrow = number of interventions. Each value is on [0,1] and represents the proportional decrease in the value of x upon hypothetical intervention}
 }
 \description{
-lorem ipsum
+not used by user, typically
 }
 \details{
 lorem ipsum

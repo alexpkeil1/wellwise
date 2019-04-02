@@ -2,7 +2,7 @@
 % Please edit documentation in R/simfunctions.R
 \name{convergence_check}
 \alias{convergence_check}
-\title{Check stan model fit for convergence}
+\title{Check stan model fit for convergence (not yet implemented)}
 \usage{
 convergence_check(fit, ...)
 }

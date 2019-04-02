@@ -2,7 +2,7 @@
 % Please edit documentation in R/helpers.R
 \name{mkdesignR}
 \alias{mkdesignR}
-\title{lorem ipsum}
+\title{helper: Create code for a design matrix}
 \usage{
 mkdesignR(terms, catmod = FALSE)
 }
@@ -12,7 +12,7 @@ mkdesignR(terms, catmod = FALSE)
 \item{catmod}{ipsum}
 }
 \description{
-lorem ipsum
+not used by user, typically
 }
 \details{
 lorem ipsum

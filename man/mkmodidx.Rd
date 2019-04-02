@@ -2,7 +2,7 @@
 % Please edit documentation in R/helpers.R
 \name{mkmodidx}
 \alias{mkmodidx}
-\title{lorem ipsum}
+\title{helper: create a model based on generic terms,}
 \usage{
 mkmodidx(coef, terms, start = 1, index = "i", print = FALSE,
   indexed = FALSE)
@@ -21,10 +21,11 @@ mkmodidx(coef, terms, start = 1, index = "i", print = FALSE,
 \item{indexed}{ipsum}
 }
 \description{
-lorem ipsum
+not used by user, typically
 }
 \details{
-lorem ipsum
+including interactions, and output model as a string - preferred way
+ to make stan model code
 }
 \examples{
 runif(1)

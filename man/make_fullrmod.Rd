@@ -2,7 +2,7 @@
 % Please edit documentation in R/helpers.R
 \name{make_fullrmod}
 \alias{make_fullrmod}
-\title{make a model to use in model.matrix}
+\title{helper: make a model to use in model.matrix}
 \usage{
 make_fullrmod(terms, intvars, binvars = NULL)
 }
@@ -14,10 +14,10 @@ make_fullrmod(terms, intvars, binvars = NULL)
 \item{binvars}{ipsum}
 }
 \description{
-lorem ipsum
+not used by user, typically
 }
 \details{
-lorem ipsum
+Creates an R formula given a set of terms and interaction variables
 }
 \examples{
 runif(1)

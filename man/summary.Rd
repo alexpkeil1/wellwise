@@ -3,7 +3,7 @@
 \name{summary}
 \alias{summary}
 \alias{summary.bgfsimmodlist}
-\title{lorem ipsum}
+\title{Summarize results of multiple simulations}
 \usage{
 \method{summary}{bgfsimmodlist}(object = NULL, ...)
 }

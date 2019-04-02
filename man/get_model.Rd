@@ -2,7 +2,7 @@
 % Please edit documentation in R/simfunctions.R
 \name{get_model}
 \alias{get_model}
-\title{lorem ipsum}
+\title{Get an existing model from the wellwise package}
 \usage{
 get_model(filename = "logistic.stan", ...)
 }
