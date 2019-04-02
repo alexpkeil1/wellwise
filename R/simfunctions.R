@@ -10,7 +10,7 @@ data_importer <- function(package=NULL, ...){
 #' @details lorem ipsum
 #' @param package import data from a specific package (NULL or 'wellwise')
 #' @param ... ipsum
-#' @importFrom readr read_csv cols
+#' @import readr
 #' @importFrom utils data
 #' @export
 #' @examples
