@@ -44,11 +44,11 @@
      vector[N] r1;
      vector[N] r0;
      
-     matrix[5,4] intprop = [[.98, .98, .98, .98], // filter 1 reduces metal 1 (Arsenic) by 98%, metal 2 (Cadmium) by 98%, metal 3 (Mn) by 98%, metal 4 (Pb) by 98% 
-                            [0, .985, 0, .965],
-                            [0, .918, 0, 0],
-                            [.994, .98, .98, .987],
-                            [0, 0, 0, .99]]; // ROWS = 5 filters, cols = 4 metals
+     matrix[5,5] intprop = [[.98, .98, .98, .98, 0], // filter 1 reduces metal 1 (Arsenic) by 98%, metal 2 (Cadmium) by 98%, metal 3 (Mn) by 98%, metal 4 (Pb) by 98%, metal 5 (Copper) by 0% 
+                            [0, .985, 0, .965, 0],
+                            [0, .918, 0, 0, 0],
+                            [.994, .98, .98, .987, 0],
+                            [0, 0, 0, .99, 0]]; // ROWS = 5 filters, cols = 5 metals
      
      r0 = inv_logit(b0 + beta[1]*Arsenic + beta[2]*Manganese + beta[3]*Lead + beta[4]*Cadmium + beta[5]*Copper +
          beta[6]*Arsenic .* Arsenic + beta[7]*Arsenic .* Manganese + beta[8]*Arsenic .* Lead + beta[9]*Arsenic .* Cadmium +
@@ -58,17 +58,16 @@
      
      for(j in 1:5) { //looping over interventions
        r1 = inv_logit(b0 + beta[1]*((1-intprop[j,1])*Arsenic) + beta[2]*((1-intprop[j,3])*Manganese) + beta[3]*((1-intprop[j,4])*Lead) + 
-           beta[4]*((1-intprop[j,2])*Cadmium) + beta[5]*Copper + beta[6]*((1-intprop[j,1])*Arsenic) .* ((1-intprop[j,1])*Arsenic) + 
-           beta[7]*((1-intprop[j,1])*Arsenic) .* ((1-intprop[j,3])*Manganese) + beta[8]*((1-intprop[j,1])*Arsenic) .* ((1-intprop[j,4])*Lead) +
-           beta[9]*((1-intprop[j,1])*Arsenic) .* ((1-intprop[j,2])*Cadmium) +  beta[10]*((1-intprop[j,1])*Arsenic) .* Copper + 
-           beta[11]*((1-intprop[j,3])*Manganese) .* ((1-intprop[j,3])*Manganese) + beta[12]*((1-intprop[j,4])*Lead) .* ((1-intprop[j,3])*Manganese) + 
-           beta[13]*((1-intprop[j,2])*Cadmium) .* ((1-intprop[j,3])*Manganese) + beta[14]*Copper .* ((1-intprop[j,3])*Manganese) + 
-           beta[15]*((1-intprop[j,4])*Lead) .* ((1-intprop[j,4])*Lead) + beta[16]*((1-intprop[j,2])*Cadmium) .* ((1-intprop[j,4])*Lead) +  
-           beta[17]*Copper .* ((1-intprop[j,4])*Lead) + beta[18]*((1-intprop[j,2])*Cadmium) .* ((1-intprop[j,2])*Cadmium) + 
-           beta[19]*((1-intprop[j,2])*Cadmium) .* Copper + beta[20]*Copper .* Copper);
+            beta[4]*((1-intprop[j,2])*Cadmium) + beta[5]*((1-intprop[j,5])*Copper) + beta[6]*((1-intprop[j,1])*Arsenic) .* ((1-intprop[j,1])*Arsenic) +
+            beta[7]*((1-intprop[j,1])*Arsenic) .* ((1-intprop[j,3])*Manganese) + beta[8]*((1-intprop[j,1])*Arsenic) .* ((1-intprop[j,4])*Lead) + 
+            beta[9]*((1-intprop[j,1])*Arsenic) .* ((1-intprop[j,2])*Cadmium) + beta[10]*((1-intprop[j,1])*Arsenic) .* ((1-intprop[j,5])*Copper) + 
+            beta[11]*((1-intprop[j,3])*Manganese) .* ((1-intprop[j,3])*Manganese) + beta[12]*((1-intprop[j,4])*Lead) .* ((1-intprop[j,3])*Manganese) + 
+            beta[13]*((1-intprop[j,2])*Cadmium) .* ((1-intprop[j,3])*Manganese) + beta[14]*((1-intprop[j,5])*Copper) .* ((1-intprop[j,3])*Manganese) + 
+            beta[15]*((1-intprop[j,4])*Lead) .* ((1-intprop[j,4])*Lead) + beta[16]*((1-intprop[j,2])*Cadmium) .* ((1-intprop[j,4])*Lead) + 
+            beta[17]*((1-intprop[j,5])*Copper) .* ((1-intprop[j,4])*Lead) + beta[18]*((1-intprop[j,2])*Cadmium) .* ((1-intprop[j,2])*Cadmium) + 
+            beta[19]*((1-intprop[j,2])*Cadmium) .* ((1-intprop[j,5])*Copper) + beta[20]*((1-intprop[j,5])*Copper) .* ((1-intprop[j,5])*Copper));
       rd[j] = mean(r1)-mean(r0);
      } 
    }
    }
-
 

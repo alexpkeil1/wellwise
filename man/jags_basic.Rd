@@ -48,7 +48,9 @@ lorem ipsum
  
  source("~/Epiprojects/wellwater/sims/code/make_stan_terms.R")
  
- mod = jags_basic(x=c('x1', 'x2'), z = 'l2', y='y', binvars=c('x1', 'x2', 'l2'), xintv = rbind(c(1,0), c(0,1),c(1,1)), binary=TRUE, matx = NULL)
+ mod = jags_basic(x=c('x1', 'x2'), z = 'l2', y='y', 
+   binvars=c('x1', 'x2', 'l2'), xintv = rbind(c(1,0), 
+   c(0,1),c(1,1)), binary=TRUE, matx = NULL)
  cat(mod)
 # usage in jags (or edit by hand)
 # not run

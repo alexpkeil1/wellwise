@@ -47,9 +47,10 @@ model {
   }#j
   beta0 ~ dnorm(0, 10);
   for(m in 1:p){
-    beta[m] ~ dnorm(mub, 1/(sigb^2));
+    beta[m] <- mub*sigb + muc;
   }#m
   mub ~ dnorm(0, 1);
+  muc ~ dnorm(0, 0.2);
   sigb ~ dt(0, 1, 1) T(0,);
 # end model
 }

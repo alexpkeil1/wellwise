@@ -1,4 +1,4 @@
-
+  
 // example with horseshoe prior
 data{
 int<lower=0> N;
@@ -78,5 +78,4 @@ real rd[5];
  
 }
 }
-
 

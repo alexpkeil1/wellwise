@@ -36,9 +36,6 @@
   \item{iter}{Iteration number for simulation}
   \item{y}{Simulated outcome}
 }}
-\source{
-\url{https://celr.ncpublichealth.com}
-}
 \usage{
 welldata
 }

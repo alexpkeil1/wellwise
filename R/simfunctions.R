@@ -1,3 +1,5 @@
+
+#######################
 # functions
 #######################
 data_importer <- function(package=NULL, ...){
@@ -15,15 +17,16 @@ data_importer <- function(package=NULL, ...){
 #' runif(1)
   #require(readr)
   # read data and do elementary processing, take only single iteration of simulated data
+  e = new.env()
   if(is.null(package)){
     cat("Reading in data from github\n")
-    welldata <- read_csv("https://cirl-unc.github.io/wellwater/data/testdata.csv", col_types = cols(), ...)
+    e$welldata <- read_csv("https://cirl-unc.github.io/wellwater/data/testdata.csv", col_types = cols(), ...)
   }
   if(!is.null(package)) {
     cat(paste0("Reading in data from ", package, " package\n"))
-    data('welldata', package=package)
+    data('welldata', package=package, envir = e)
   }
-  welldata
+  e$welldata
   }
 
 data_reader <- function(raw, i, 
@@ -184,6 +187,7 @@ data_analyst <- function(i,
 #  the model fit is preserved across iterations
   # do single analysis of data
   #stan model
+  ch = NULL
   ncores = getOption("mc.cores")
   if(is.null(s.code) & is.null(s.file)) {
     if(verbose) cat("no stan model given, defaulting to logistic model with normal priors")

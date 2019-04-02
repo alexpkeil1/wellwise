@@ -1,4 +1,4 @@
-
+  
 // example with horseshoe prior
 data{
 int<lower=0> N;
@@ -65,5 +65,4 @@ real rd;
   rd = mean(r1)-mean(r0);
 }
 }
-
 

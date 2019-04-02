@@ -256,7 +256,9 @@ stan_basic <- function(x=c('x', 'z'),
 #'  
 #'  source("~/Epiprojects/wellwater/sims/code/make_stan_terms.R")
 #'  
-#'  mod = stan_basic(x=c('x1', 'x2'), z = 'l2', y='y', binvars=c('x1', 'x2', 'l2'), xintv = rbind(c(1,0), c(0,1),c(1,1)), vectorized = TRUE, binary=TRUE, matx = NULL)
+#'  mod = stan_basic(x=c('x1', 'x2'), z = 'l2', y='y', 
+#'    binvars=c('x1', 'x2', 'l2'), xintv = rbind(c(1,0), c(0,1),c(1,1)), 
+#'    vectorized = TRUE, binary=TRUE, matx = NULL)
 #'  cat(mod)
 #' # usage in stan (or edit by hand)
 #' # not run
@@ -456,7 +458,9 @@ jags_basic <- function(x=c('x', 'z'),
 #'  
 #'  source("~/Epiprojects/wellwater/sims/code/make_stan_terms.R")
 #'  
-#'  mod = jags_basic(x=c('x1', 'x2'), z = 'l2', y='y', binvars=c('x1', 'x2', 'l2'), xintv = rbind(c(1,0), c(0,1),c(1,1)), binary=TRUE, matx = NULL)
+#'  mod = jags_basic(x=c('x1', 'x2'), z = 'l2', y='y', 
+#'    binvars=c('x1', 'x2', 'l2'), xintv = rbind(c(1,0), 
+#'    c(0,1),c(1,1)), binary=TRUE, matx = NULL)
 #'  cat(mod)
 #' # usage in jags (or edit by hand)
 #' # not run
@@ -574,7 +578,9 @@ gibbs_basic <- function(x=c('x', 'z'),
 #'  
 #'  source("~/Epiprojects/wellwater/sims/code/make_stan_terms.R")
 #'  
-#'  mod = jags_basic(x=c('x1', 'x2'), z = 'l2', y='y', binvars=c('x1', 'x2', 'l2'), xintv = rbind(c(1,0), c(0,1),c(1,1)), binary=TRUE, matx = NULL)
+#'  mod = jags_basic(x=c('x1', 'x2'), z = 'l2', y='y', 
+#'    binvars=c('x1', 'x2', 'l2'), xintv = rbind(c(1,0), c(0,1),c(1,1)), 
+#'    binary=TRUE, matx = NULL)
 #'  cat(mod)
 #' # usage in jags (or edit by hand)
 #' # not run
@@ -630,6 +636,5 @@ gibbs_basic <- function(x=c('x', 'z'),
   paste(data, model, sep = "\n")
 }
 
-#cat(jags_basic(x=names(full), z=NULL, y='y', binary = TRUE, matx="X", xintv = NULL, standardizex = FALSE))
-#cat(gibbs_basic(x=names(full), z=NULL, y='y', binary = TRUE, matx="X", xintv = NULL, standardizex = FALSE))
 
+############ usage ############
