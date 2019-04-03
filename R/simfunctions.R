@@ -20,8 +20,10 @@ data_importer <- function(package=NULL, ...){
   e = new.env()
   if(is.null(package)){
     cat("Reading in data from github\n")
-    #e$welldata <- read_csv("https://cirl-unc.github.io/wellwater/data/testdata.csv", col_types = cols(), ...)
-    e$welldata <- read.csv("https://cirl-unc.github.io/wellwater/data/testdata.csv")
+    cat("try data_importer(package='wellwise') to speed this up substantially!\n")
+    e$welldata <- read_csv("https://cirl-unc.github.io/wellwater/data/testdata.csv", col_types = cols(.default = col_double()), ...)
+    #e$welldata <- read.csv("https://cirl-unc.github.io/wellwater/data/testdata.csv")
+    e$welldata <- open("https://cirl-unc.github.io/wellwater/data/welldata.rda")
   }
   if(!is.null(package)) {
     cat(paste0("Reading in data from ", package, " package\n"))
@@ -128,8 +130,8 @@ convergence_check <- function(fit, ...){
 }
 
 
-julia.model <- function(iter,
-                       j.code,
+julia.model <- function(j.code,
+                       iter,
                        warmup, 
                        chains, 
                        sdat=sdat,
@@ -144,13 +146,13 @@ julia.model <- function(iter,
 #' @description Fit a julia model to a single data set
 #' 
 #' @details Fit a julia model to a single data set
-#' @param iter Number of "sweep" iterations, or iterations after the burnin/warmup
-#' @param fl Filename to output model results for single run (useful for debugging)
 #' @param j.code name of a character string with a stan model 
+#' @param iter Number of "sweep" iterations, or iterations after the burnin/warmup
 #' @param warmup warmup (stan) / n.adapt (jags) / burnin (julia). Number of iterations to allow
 #' for adaptation of MCMC parameters/burnin
 #' @param chains Number of parallel MCMC chains (default 4)
 #' @param sdat list of data created from 
+#' @param fl Filename to output model results for single run (useful for debugging)
 #' @param jinstance existing julia_setup() instance
 #' @param cleanafter should the extra workers be killed after running?
 #' @param verbose print extra stuff 
@@ -275,7 +277,7 @@ julia.model <- function(iter,
   
   # run model on all workers and collect results
   julia$command(runmodel) 
-  julia$command(paste0('r = runmod(',iter+warmup,', ',warmup, ', ', chains,')')) # run gibbs sampler in Julia
+  print(julia$command(paste0('r = runmod(',iter+warmup,', ',warmup, ', ', chains,')'))) # run gibbs sampler in Julia
   jres = julia$eval('r') # bring julia results into R as matrix
   res = as.mcmc.list(lapply(jres, function(x) mcmc(x, start=warmup+1, end=iter+warmup)))
   if(cleanafter){
@@ -548,7 +550,7 @@ analysis_wrapper <- function(simiters,
     sq = simiters
   }
   #mf = match(c("fl"), names(call))
-  dir = paste0(path.expand(dir), "/")
+  dir = normalizePath(paste0(path.expand(dir), "/"), mustWork=TRUE)
   outfile = paste0(dir, root, "_res.csv")
   if(debug & type=='stan'){
     outfile = "samples.csv"
@@ -558,7 +560,7 @@ analysis_wrapper <- function(simiters,
   if(verbose) cat(paste0("R output can be seen at ", paste0(dir, root, "_rmsg.txt"), "\n"))
   res = list(1:length(sq))
   j=1
-  filenm = file(paste0(dir, root, "_rmsg.txt"), 'w')
+  filenm = paste0(dir, root, "_rmsg.txt")
   if(!debug) sink(filenm, split = FALSE, type = c("output", "message"))
   if(debug) sink(filenm, split = TRUE, type = c("output", "message"))
   cat(paste0("Analyzing ", length(sq), " iterations of data\n"))
@@ -576,18 +578,16 @@ analysis_wrapper <- function(simiters,
     }
     if(type == 'julia'){
       jfn = paste0(dir, root, "_jcode.txt")
-      #jfile = file(jfn, 'w')
       if(verbose) cat(paste0("Julia code can be seen at ", jfn, "\n"))
       jenv = new.env()
       res[[j]] = data_analyst(i, rawdata, fl=jfn, verbose=verbose, debug=debug, 
                               type=type, env=jenv, ...)
-      #close(jfile)
     }
     j=j+1
   }
   #
   sink.reset()
-  close(filenm)
+  #close(filenm)
   if(verbose) cat(paste("\nLog in ", filenm))
   class(res) <- 'bgfsimmodlist'
   res

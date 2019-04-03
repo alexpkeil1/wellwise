@@ -4,14 +4,14 @@
 \alias{julia.model}
 \title{Fit a julia gibbs sampler (given by s.code)}
 \usage{
-julia.model(iter, j.code, warmup, chains, sdat = sdat, fl = tempfile(),
+julia.model(j.code, iter, warmup, chains, sdat = sdat, fl = tempfile(),
   jinstance = NULL, cleanafter = FALSE, verbose = TRUE,
   debug = FALSE)
 }
 \arguments{
-\item{iter}{Number of "sweep" iterations, or iterations after the burnin/warmup}
-
 \item{j.code}{name of a character string with a stan model}
+
+\item{iter}{Number of "sweep" iterations, or iterations after the burnin/warmup}
 
 \item{warmup}{warmup (stan) / n.adapt (jags) / burnin (julia). Number of iterations to allow
 for adaptation of MCMC parameters/burnin}
