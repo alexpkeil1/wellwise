@@ -128,13 +128,16 @@ convergence_check <- function(fit, ...){
 }
 
 
-runjulia <- function(iter,
-                       s.code,
+julia.model <- function(iter,
+                       j.code,
                        warmup, 
                        chains, 
                        sdat=sdat,
                        fl=tempfile(),
-                       verbose=TRUE
+                       jinstance=NULL,
+                       cleanafter=FALSE,
+                       verbose=TRUE,
+                       debug=FALSE
                        ){
 #' @title Fit a julia gibbs sampler (given by s.code)
 #' 
@@ -143,48 +146,25 @@ runjulia <- function(iter,
 #' @details Fit a julia model to a single data set
 #' @param iter Number of "sweep" iterations, or iterations after the burnin/warmup
 #' @param fl Filename to output model results for single run (useful for debugging)
-#' @param s.code name of a character string with a stan model 
+#' @param j.code name of a character string with a stan model 
 #' @param warmup warmup (stan) / n.adapt (jags) / burnin (julia). Number of iterations to allow
 #' for adaptation of MCMC parameters/burnin
 #' @param chains Number of parallel MCMC chains (default 4)
 #' @param sdat list of data created from 
+#' @param jinstance existing julia_setup() instance
+#' @param cleanafter should the extra workers be killed after running?
 #' @param verbose print extra stuff 
-#' @importJuliaCall
+#' @param debug print extra debugging info? FALSE
+#' @import JuliaCall
 #' @importFrom  coda as.mcmc.list mcmc
+#' @export
+  call = match.call()
+  print(call)
+  if(verbose) cat(paste0("Julia code stored in ", fl))
   runonce <- c(
-    "using Distributed",
-     paste0("if(nprocs()<", chains,") # need to run this before anything!
-       addprocs(", chains,"-nprocs())
-      end")
-  )
-  runworker <- c(
+    "using Distributed, Pkg",
      "Pkg.add(PackageSpec(url = \"https://github.com/alexpkeil1/PolyaGammaDistribution.jl\"))",
      "Pkg.add(PackageSpec(url=\"https://github.com/alexpkeil1/AltDistributions.jl\"))",
-     "using Pkg, Distributed, LinearAlgebra, Statistics, Distributions,
-       DelimitedFiles, RData, DataFrames, CSV, PolyaGammaDistribution, AltDistributions",
-     "function ccdat(data)
-       cols = [:Arsenic, :Cadmium, :Lead, :Manganese, :Copper, :y];
-       cc = completecases(data[:,cols]);
-       dat = data[(cc .& (data[:iter] .== 1)) ,cols];
-       return dat
-     end",
-     " function rbern(mu::Float64)
-      x::Int8  = (rand()<mu)*1
-     end",
-     "function rbern(mu::Array{Float64,1})
-      N::Int64 = length(mu)
-      x::Array{Int8,1}  = (rand(N) .< mu) .* 1
-     end",
-     "function expit(µ::Float64)
-      x::Float64  = 1/(1-exp(µ))
-     end",
-     "function expit(µ::Array{Float64,1})
-      x::Array{Float64,1}  = 1. ./ (1. .+ exp.( .- µ))
-     end
-     ",
-     "function expit(µ::Array{Union{Missing, Float64},1})
-      x::Array{Float64,1}  = 1. ./ (1. .+ exp.( .- µ))
-     end",
      "function sendto(p::Int; args...)
          for (nm, val) in args
              @spawnat(p, eval(Main, Expr(:(=), nm, val)))
@@ -195,7 +175,40 @@ runjulia <- function(iter,
              sendto(p; args...)
          end
      end",
-     s.code,
+     paste0(
+     "function addmoreprocs()
+       if(nprocs()<", chains,") # need to run this before anything!
+        addprocs(", chains,"-nprocs())
+        end
+      end")
+  )
+  runworker <- c(
+     "using Pkg, Distributed, LinearAlgebra, Statistics, Distributions,
+       DelimitedFiles, RData, DataFrames, CSV, PolyaGammaDistribution, AltDistributions",
+     "function ccdat(data)
+        cols = [:Arsenic, :Cadmium, :Lead, :Manganese, :Copper, :y];
+        cc = completecases(data[:,cols]);
+        dat = data[(cc .& (data[:iter] .== 1)) ,cols];
+        return dat
+     end",
+     "function rbern(mu::Float64)
+        x::Int8  = (rand()<mu)*1
+     end",
+     "function rbern(mu::Array{Float64,1})
+        N::Int64 = length(mu)
+        x::Array{Int8,1}  = (rand(N) .< mu) .* 1
+     end",
+     "function expit(mu::Float64)
+        x::Float64  = 1/(1-exp(mu))
+     end",
+     "function expit(mu::Array{Float64,1})
+        x::Array{Float64,1}  = 1. ./ (1. .+ exp.( .- mu))
+     end
+     ",
+     "function expit(mu::Array{Union{Missing, Float64},1})
+        x::Array{Float64,1}  = 1. ./ (1. .+ exp.( .- mu))
+     end",
+     j.code,
     'println("julia utility commands done")'
   )
   runmodel <- paste0(
@@ -214,6 +227,7 @@ runjulia <- function(iter,
 
   cat("# Julia worker command file created by wellwise package \n\n\n", file=fl)
   for(u in runworker){
+    if(debug) cat(u, "\n\n")
     cat(u, "\n\n", file=fl, append=TRUE)
   }
 
@@ -226,34 +240,51 @@ runjulia <- function(iter,
     end",
     "println(\"cleaning commands finished\")"
   )
-
-  julia <- julia_setup()
-  pkgs <- c("Pkg", "Distributed", "LinearAlgebra", "Statistics", "Distributions", "AltDistributions",
-          "DelimitedFiles", "RData", "DataFrames", "CSV", "PolyaGammaDistribution")
-  for(pkg in pkgs) {
-    print(pkg)
-    julia$install_package_if_needed(pkg)
-  }
   # prelims
-  for(u in runonce) {
-    if(verbose) print(u)
-    julia$command(u) # also number of chains -todo move this to higher level control
-  }
-  # send data to julia
+  if(is.null(jinstance)) {
+    julia <- julia_setup()
+    julia$command("include(x) = Base.include(Main, x)")
+    pkgs <- c("Pkg", "Distributed", "LinearAlgebra", "Statistics", "Distributions", "AltDistributions",
+            "DelimitedFiles", "RData", "DataFrames", "CSV", "PolyaGammaDistribution")
+    for(pkg in pkgs) {
+      print(pkg)
+      julia$install_package_if_needed(pkg)
+    }
+    # create some necessary functions  
+    cat("\n", file=paste0(fl, '2'), append=FALSE)
+    for(u in runonce) {
+      if(debug) print(u)
+      cat(u, "\n\n", file=paste0(fl, '2'), append=TRUE)
+      #julia$command(u) # also number of chains -todo move this to higher level control
+    }
+    julia$command(paste0("include(\"",fl,"2\")"))
+    # send data to julia
+    #sdat = data_reader(RAW, 1)
+    # export commands to workers
+    julia$command(paste0("include(\"",fl,"\")"))
+    julia$command("addmoreprocs()")
+    julia$command(paste0("@everywhere include(\"",fl,"\")"))
+    } else {
+      if(verbose) cat("Utilizing existing instance of julia_setup()")
+      julia <- jinstance
+    }
+  # read in data
   julia$assign("rdat", data.frame(cbind(y=sdat$y, sdat$X)))
 
-  # export commands to workers
-  julia$command(paste0("@everywhere include(\",fl,\")"))
+  if(verbose) cat(paste(readLines(fl), collapse = "\n"))
   
   # run model on all workers and collect results
+  julia$command(runmodel) 
   julia$command(paste0('r = runmod(',iter+warmup,', ',warmup, ', ', chains,')')) # run gibbs sampler in Julia
   jres = julia$eval('r') # bring julia results into R as matrix
   res = as.mcmc.list(lapply(jres, function(x) mcmc(x, start=warmup+1, end=iter+warmup)))
-  for(c in cleanup) {
-    if(verbose) print(c)
-    julia$command(c) # also number of chains -todo move this to higher level control
+  if(cleanafter){
+    for(c in cleanup) {
+      if(debug) print(c)
+      julia$command(c) # also number of chains -todo move this to higher level control
+    }
   }
-  res
+  list(res=res, jinstance=julia)
 }
 
 
@@ -268,7 +299,9 @@ data_analyst <- function(i,
                          p = NULL,
                          dx = NULL,
                          N = NULL,
+                         env = NULL,
                          verbose=FALSE,
+                         debug=FALSE,
                          type=c('stan', 'jags', 'julia'),
                          stanfit=NA,
                          basis = c("identity", "iqr", "sd"),
@@ -291,7 +324,9 @@ data_analyst <- function(i,
 #' @param p number of beta parameters in outcome model (optional - R makes a guess)
 #' @param dx number of columns in data matrix (optional - R makes a guess)
 #' @param N Sample size (optional - R makes a guess)
+#' @param env environment for existing julia instance
 #' @param verbose print extra debugging info? FALSE
+#' @param debug print extra debugging info? FALSE
 #' @param type Which type of model is it? Can be 'stan' or 'jags' 
 #' @param stanfit Name of stan_model or stan output that can be recycled. This
 #' will use a pre-compiled version of the stan code which cuts simulation time
@@ -322,8 +357,8 @@ data_analyst <- function(i,
   type = type[1]
   ncores = getOption("mc.cores")
   if(is.null(s.code) & is.null(s.file)) {
-    if(verbose) cat("no stan model given, defaulting to logistic model with normal priors")
-    s.code <- get_model('logistic')
+    if(verbose) stop("no stan/jags/julia model given, (specify either s.code or s.file[experimental])")
+    #s.code <- get_model('logistic')
   }
   if(str_length(s.code)<40) s.code <- get_model(s.code) # open existing model if none exists
   #make a guess at p if it's NULL and program is structured properly
@@ -429,15 +464,24 @@ change basis to "identity", "sd", or "range"')
     stopCluster(cl)
     res = as.mcmc.list(res)
     write_csv(path=fl, as.data.frame(as.matrix(res)))
-  } else if(type=='julia'){
+  }
+  if(type=='julia'){
+    if(verbose) cat("julia models are experimental")
     if(fl=="") stop("fl must be a writable filename for type='julia'")
-    res = runjulia(iter=iter,
-                   s.code=s.code,
+    if(!exists("jinstance", envir=env)) env$jinstance=NULL
+    resj = julia.model(iter=iter,
+                   j.code=s.code,
                    warmup=warmup, 
                    chains=chains, 
                    sdat=sdat,
                    fl=fl,
+                   verbose=verbose,
+                   jinstance = env$jinstance,
+                   cleanafter = FALSE, 
+                   debug=debug
                   )
+    res = resj[['res']]
+    env$jinstance = resj[['jinstance']]
   }
   #step to include here: automated monitoring for convergence and continued sampling if not converged
   #class(res) <- 'bgfsimmod'
@@ -468,7 +512,7 @@ sink.reset <- function(...){
 analysis_wrapper <- function(simiters, 
                              rawdata, 
                              dir="~/temp/", 
-                             root, 
+                             root='', 
                              debug=FALSE, 
                              verbose=FALSE,
                              type='stan',
@@ -486,7 +530,7 @@ analysis_wrapper <- function(simiters,
 #' @param root "test"
 #' @param debug FALSE
 #' @param verbose FALSE
-#' @param type 'jags' or 'stan'
+#' @param type 'jags', 'stan', or 'julia'
 #' @param stanfit NA or name of object containing a fitted stan model (re-uses
 #' the compiled stan model, which will be efficient for restarting iterations after
 #' checking first one(s) for diagnostics
@@ -504,8 +548,9 @@ analysis_wrapper <- function(simiters,
     sq = simiters
   }
   #mf = match(c("fl"), names(call))
+  dir = paste0(path.expand(dir), "/")
   outfile = paste0(dir, root, "_res.csv")
-  if(debug){
+  if(debug & type=='stan'){
     outfile = "samples.csv"
     cat(paste0("Outputting samples from stan to ", outfile))
   }
@@ -514,18 +559,29 @@ analysis_wrapper <- function(simiters,
   res = list(1:length(sq))
   j=1
   filenm = file(paste0(dir, root, "_rmsg.txt"), 'w')
-  sink(filenm, split = FALSE, type = c("output", "message"))
+  if(!debug) sink(filenm, split = FALSE, type = c("output", "message"))
+  if(debug) sink(filenm, split = TRUE, type = c("output", "message"))
   cat(paste0("Analyzing ", length(sq), " iterations of data\n"))
   for(i in sq){
     cat(".")
     if(type=='stan'){
-      res[[j]] = data_analyst(i, rawdata, fl=outfile, verbose=verbose, type=type, 
-                              stanfit=stanfit, ...)
-      if(j==1) stanfit <- res[[1]] # safe file for later
+      res[[j]] = data_analyst(i, rawdata, fl=outfile, verbose=verbose, debug=debug, 
+                              type=type, stanfit=stanfit, ...)
+      if(j==1) stanfit <- res[[1]] # save file for later
     }
     # TODO: ADD type='gibbs' (alex to send example of gibbs sampler)
-    if(type=='jags'){
-      res[[j]] = data_analyst(i, rawdata, fl=outfile, verbose=verbose, type=type, ...)
+    if(type == 'jags'){
+      res[[j]] = data_analyst(i, rawdata, fl=outfile, verbose=verbose, debug=debug, 
+                              type=type, ...)
+    }
+    if(type == 'julia'){
+      jfn = paste0(dir, root, "_jcode.txt")
+      #jfile = file(jfn, 'w')
+      if(verbose) cat(paste0("Julia code can be seen at ", jfn, "\n"))
+      jenv = new.env()
+      res[[j]] = data_analyst(i, rawdata, fl=jfn, verbose=verbose, debug=debug, 
+                              type=type, env=jenv, ...)
+      #close(jfile)
     }
     j=j+1
   }

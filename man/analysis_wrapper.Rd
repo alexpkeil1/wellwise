@@ -4,7 +4,7 @@
 \alias{analysis_wrapper}
 \title{User level function to run multiple simulation iterations}
 \usage{
-analysis_wrapper(simiters, rawdata, dir = "~/temp/", root,
+analysis_wrapper(simiters, rawdata, dir = "~/temp/", root = "",
   debug = FALSE, verbose = FALSE, type = "stan", stanfit = NA, ...)
 }
 \arguments{
@@ -20,7 +20,7 @@ analysis_wrapper(simiters, rawdata, dir = "~/temp/", root,
 
 \item{verbose}{FALSE}
 
-\item{type}{'jags' or 'stan'}
+\item{type}{'jags', 'stan', or 'julia'}
 
 \item{stanfit}{NA or name of object containing a fitted stan model (re-uses
 the compiled stan model, which will be efficient for restarting iterations after

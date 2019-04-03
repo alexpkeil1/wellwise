@@ -6,8 +6,9 @@
 \usage{
 data_analyst(i, raw = raw, fl = "~/temp.csv", s.code = NULL,
   s.file = NULL, iter = 2500, warmup = 500, chains = 4, p = NULL,
-  dx = NULL, N = NULL, verbose = FALSE, type = c("stan", "jags",
-  "julia"), stanfit = NA, basis = c("identity", "iqr", "sd"), ...)
+  dx = NULL, N = NULL, env = NULL, verbose = FALSE,
+  debug = FALSE, type = c("stan", "jags", "julia"), stanfit = NA,
+  basis = c("identity", "iqr", "sd"), ...)
 }
 \arguments{
 \item{i}{iteration in simulated data}
@@ -33,7 +34,11 @@ for adaptation of MCMC parameters/burnin}
 
 \item{N}{Sample size (optional - R makes a guess)}
 
+\item{env}{environment for existing julia instance}
+
 \item{verbose}{print extra debugging info? FALSE}
+
+\item{debug}{print extra debugging info? FALSE}
 
 \item{type}{Which type of model is it? Can be 'stan' or 'jags'}
 
