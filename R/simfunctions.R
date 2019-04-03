@@ -127,6 +127,136 @@ convergence_check <- function(fit, ...){
   #showMethods(class="stanfit")
 }
 
+
+runjulia <- function(iter,
+                       s.code,
+                       warmup, 
+                       chains, 
+                       sdat=sdat,
+                       fl=tempfile(),
+                       verbose=TRUE
+                       ){
+#' @title Fit a julia gibbs sampler (given by s.code)
+#' 
+#' @description Fit a julia model to a single data set
+#' 
+#' @details Fit a julia model to a single data set
+#' @param iter Number of "sweep" iterations, or iterations after the burnin/warmup
+#' @param fl Filename to output model results for single run (useful for debugging)
+#' @param s.code name of a character string with a stan model 
+#' @param warmup warmup (stan) / n.adapt (jags) / burnin (julia). Number of iterations to allow
+#' for adaptation of MCMC parameters/burnin
+#' @param chains Number of parallel MCMC chains (default 4)
+#' @param sdat list of data created from 
+#' @param verbose print extra stuff 
+#' @importJuliaCall
+#' @importFrom  coda as.mcmc.list mcmc
+  runonce <- c(
+    "using Distributed",
+     paste0("if(nprocs()<", chains,") # need to run this before anything!
+       addprocs(", chains,"-nprocs())
+      end")
+  )
+  runworker <- c(
+     "Pkg.add(PackageSpec(url = \"https://github.com/alexpkeil1/PolyaGammaDistribution.jl\"))",
+     "Pkg.add(PackageSpec(url=\"https://github.com/alexpkeil1/AltDistributions.jl\"))",
+     "using Pkg, Distributed, LinearAlgebra, Statistics, Distributions,
+       DelimitedFiles, RData, DataFrames, CSV, PolyaGammaDistribution, AltDistributions",
+     "function ccdat(data)
+       cols = [:Arsenic, :Cadmium, :Lead, :Manganese, :Copper, :y];
+       cc = completecases(data[:,cols]);
+       dat = data[(cc .& (data[:iter] .== 1)) ,cols];
+       return dat
+     end",
+     " function rbern(mu::Float64)
+      x::Int8  = (rand()<mu)*1
+     end",
+     "function rbern(mu::Array{Float64,1})
+      N::Int64 = length(mu)
+      x::Array{Int8,1}  = (rand(N) .< mu) .* 1
+     end",
+     "function expit(µ::Float64)
+      x::Float64  = 1/(1-exp(µ))
+     end",
+     "function expit(µ::Array{Float64,1})
+      x::Array{Float64,1}  = 1. ./ (1. .+ exp.( .- µ))
+     end
+     ",
+     "function expit(µ::Array{Union{Missing, Float64},1})
+      x::Array{Float64,1}  = 1. ./ (1. .+ exp.( .- µ))
+     end",
+     "function sendto(p::Int; args...)
+         for (nm, val) in args
+             @spawnat(p, eval(Main, Expr(:(=), nm, val)))
+         end
+     end",
+     "function sendto(ps::Vector{Int}; args...)
+         for p in ps
+             sendto(p; args...)
+         end
+     end",
+     s.code,
+    'println("julia utility commands done")'
+  )
+  runmodel <- paste0(
+      "function runmod(niter::Int64, burnin::Int64=0, chains::Int64=4)
+      futureres, res = Dict(), Dict()
+      sendto([i for i in procs()[1:",chains,"]], dat=rdat)
+      for i in procs()
+       #@spawnat i global dat = rdat
+       push!(futureres,  i => @spawnat i gibbs(niter, burnin, dat));
+      end
+      for i in procs()
+        push!(res, i => fetch(futureres[i]))
+      end
+      return res
+    end")
+
+  cat("# Julia worker command file created by wellwise package \n\n\n", file=fl)
+  for(u in runworker){
+    cat(u, "\n\n", file=fl, append=TRUE)
+  }
+
+  #cleanup commands
+  cleanup <- c(
+    "for p in procs() 
+      if p>1 
+       rmprocs(p)
+      end
+    end",
+    "println(\"cleaning commands finished\")"
+  )
+
+  julia <- julia_setup()
+  pkgs <- c("Pkg", "Distributed", "LinearAlgebra", "Statistics", "Distributions", "AltDistributions",
+          "DelimitedFiles", "RData", "DataFrames", "CSV", "PolyaGammaDistribution")
+  for(pkg in pkgs) {
+    print(pkg)
+    julia$install_package_if_needed(pkg)
+  }
+  # prelims
+  for(u in runonce) {
+    if(verbose) print(u)
+    julia$command(u) # also number of chains -todo move this to higher level control
+  }
+  # send data to julia
+  julia$assign("rdat", data.frame(cbind(y=sdat$y, sdat$X)))
+
+  # export commands to workers
+  julia$command(paste0("@everywhere include(\",fl,\")"))
+  
+  # run model on all workers and collect results
+  julia$command(paste0('r = runmod(',iter+warmup,', ',warmup, ', ', chains,')')) # run gibbs sampler in Julia
+  jres = julia$eval('r') # bring julia results into R as matrix
+  res = as.mcmc.list(lapply(jres, function(x) mcmc(x, start=warmup+1, end=iter+warmup)))
+  for(c in cleanup) {
+    if(verbose) print(c)
+    julia$command(c) # also number of chains -todo move this to higher level control
+  }
+  res
+}
+
+
 data_analyst <- function(i, 
                          raw=raw, 
                          fl="~/temp.csv", 
@@ -139,7 +269,7 @@ data_analyst <- function(i,
                          dx = NULL,
                          N = NULL,
                          verbose=FALSE,
-                         type='stan',
+                         type=c('stan', 'jags', 'julia'),
                          stanfit=NA,
                          basis = c("identity", "iqr", "sd"),
                          ...
@@ -178,7 +308,7 @@ data_analyst <- function(i,
 #' @param ... arguments to stan() or coda.samples() for a Stan or JAGS model, 
 #' respectively
 #' @export
-#' @import rstan rjags parallel doParallel foreach
+#' @import rstan rjags parallel doParallel foreach JuliaCall
 #' @importFrom  stringr str_length
 #' @importFrom  coda as.mcmc.list
 #' @importFrom  readr write_csv
@@ -189,6 +319,7 @@ data_analyst <- function(i,
   # do single analysis of data
   #stan model
   ch = NULL
+  type = type[1]
   ncores = getOption("mc.cores")
   if(is.null(s.code) & is.null(s.file)) {
     if(verbose) cat("no stan model given, defaulting to logistic model with normal priors")
@@ -259,9 +390,10 @@ change basis to "identity", "sd", or "range"')
              iter=iter+warmup, 
              warmup=warmup, 
              ...)
-    }
-    if(type=='jags'){
+    }else if(type=='jags'){
         tf = system.file("jags", paste0(s.file,".jags", package = "wellwise"))
+    } else{
+      stop(paste("s.file not implemented for type", type, ". Try setting s.file=NULL"))
     }
   } else if(!is.null(s.code)){
     if(type=='stan'){
@@ -273,8 +405,7 @@ change basis to "identity", "sd", or "range"')
              iter=iter+warmup, 
              warmup=warmup, 
              ...)
-    }
-    if(type=='jags'){
+    } else if(type=='jags'){
       tf=tempfile()
       cat(s.code, file=tf)
     }
@@ -298,6 +429,15 @@ change basis to "identity", "sd", or "range"')
     stopCluster(cl)
     res = as.mcmc.list(res)
     write_csv(path=fl, as.data.frame(as.matrix(res)))
+  } else if(type=='julia'){
+    if(fl=="") stop("fl must be a writable filename for type='julia'")
+    res = runjulia(iter=iter,
+                   s.code=s.code,
+                   warmup=warmup, 
+                   chains=chains, 
+                   sdat=sdat,
+                   fl=fl,
+                  )
   }
   #step to include here: automated monitoring for convergence and continued sampling if not converged
   #class(res) <- 'bgfsimmod'

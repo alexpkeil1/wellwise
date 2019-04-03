@@ -6,8 +6,8 @@
 \usage{
 data_analyst(i, raw = raw, fl = "~/temp.csv", s.code = NULL,
   s.file = NULL, iter = 2500, warmup = 500, chains = 4, p = NULL,
-  dx = NULL, N = NULL, verbose = FALSE, type = "stan",
-  stanfit = NA, basis = c("identity", "iqr", "sd"), ...)
+  dx = NULL, N = NULL, verbose = FALSE, type = c("stan", "jags",
+  "julia"), stanfit = NA, basis = c("identity", "iqr", "sd"), ...)
 }
 \arguments{
 \item{i}{iteration in simulated data}
