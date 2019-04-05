@@ -21,9 +21,9 @@ data_importer <- function(package=NULL, ...){
   if(is.null(package)){
     cat("Reading in data from github\n")
     cat("try data_importer(package='wellwise') to speed this up substantially!\n")
-    e$welldata <- read_csv("https://cirl-unc.github.io/wellwater/data/testdata.csv", col_types = cols(.default = col_double()), ...)
+    #e$welldata <- read_csv("https://cirl-unc.github.io/wellwater/data/testdata20190403.csv", col_types = cols(.default = col_double()), ...)
     #e$welldata <- read.csv("https://cirl-unc.github.io/wellwater/data/testdata.csv")
-    e$welldata <- open("https://cirl-unc.github.io/wellwater/data/welldata.rda")
+    #e$welldata <- load("https://cirl-unc.github.io/wellwater/data/welldata.rda")
   }
   if(!is.null(package)) {
     cat(paste0("Reading in data from ", package, " package\n"))
@@ -139,7 +139,8 @@ julia.model <- function(j.code,
                        jinstance=NULL,
                        cleanafter=FALSE,
                        verbose=TRUE,
-                       debug=FALSE
+                       debug=FALSE,
+                       addpackages=TRUE
                        ){
 #' @title Fit a julia gibbs sampler (given by s.code)
 #' 
@@ -164,19 +165,11 @@ julia.model <- function(j.code,
   print(call)
   if(verbose) cat(paste0("Julia code stored in ", fl))
   runonce <- c(
-    "using Distributed, Pkg",
-     "Pkg.add(PackageSpec(url = \"https://github.com/alexpkeil1/PolyaGammaDistribution.jl\"))",
-     "Pkg.add(PackageSpec(url=\"https://github.com/alexpkeil1/AltDistributions.jl\"))",
-     "function sendto(p::Int; args...)
-         for (nm, val) in args
-             @spawnat(p, eval(Main, Expr(:(=), nm, val)))
-         end
-     end",
-     "function sendto(ps::Vector{Int}; args...)
-         for p in ps
-             sendto(p; args...)
-         end
-     end",
+    "using Pkg",
+    ifelse(addpackages, "using Pkg", ""),
+     ifelse(addpackages, "Pkg.add(PackageSpec(url = \"https://github.com/alexpkeil1/PolyaGammaDistribution.jl\"))", ""),
+     ifelse(addpackages, "Pkg.add(PackageSpec(url=\"https://github.com/alexpkeil1/AltDistributions.jl\"))", ""),
+     ifelse(addpackages, "Pkg.add(PackageSpec(url=\"https://github.com/alexpkeil1/wellwisejl\"))", ""), # offloaded a lot of functionality here
      paste0(
      "function addmoreprocs()
        if(nprocs()<", chains,") # need to run this before anything!
@@ -186,47 +179,11 @@ julia.model <- function(j.code,
   )
   runworker <- c(
      "using Pkg, Distributed, LinearAlgebra, Statistics, Distributions,
-       DelimitedFiles, RData, DataFrames, CSV, PolyaGammaDistribution, AltDistributions",
-     "function ccdat(data)
-        cols = [:Arsenic, :Cadmium, :Lead, :Manganese, :Copper, :y];
-        cc = completecases(data[:,cols]);
-        dat = data[(cc .& (data[:iter] .== 1)) ,cols];
-        return dat
-     end",
-     "function rbern(mu::Float64)
-        x::Int8  = (rand()<mu)*1
-     end",
-     "function rbern(mu::Array{Float64,1})
-        N::Int64 = length(mu)
-        x::Array{Int8,1}  = (rand(N) .< mu) .* 1
-     end",
-     "function expit(mu::Float64)
-        x::Float64  = 1/(1-exp(mu))
-     end",
-     "function expit(mu::Array{Float64,1})
-        x::Array{Float64,1}  = 1. ./ (1. .+ exp.( .- mu))
-     end
-     ",
-     "function expit(mu::Array{Union{Missing, Float64},1})
-        x::Array{Float64,1}  = 1. ./ (1. .+ exp.( .- mu))
-     end",
+       DelimitedFiles, RData, DataFrames, CSV, PolyaGammaDistribution, 
+       AltDistributions, wellwisejl",
      j.code,
     'println("julia utility commands done")'
   )
-  runmodel <- paste0(
-      "function runmod(niter::Int64, burnin::Int64=0, chains::Int64=4)
-      futureres, res = Dict(), Dict()
-      sendto([i for i in procs()[1:",chains,"]], dat=rdat)
-      for i in procs()
-       #@spawnat i global dat = rdat
-       push!(futureres,  i => @spawnat i gibbs(niter, burnin, dat));
-      end
-      for i in procs()
-        push!(res, i => fetch(futureres[i]))
-      end
-      return res
-    end")
-
   cat("# Julia worker command file created by wellwise package \n\n\n", file=fl)
   for(u in runworker){
     if(debug) cat(u, "\n\n")
@@ -245,23 +202,21 @@ julia.model <- function(j.code,
   # prelims
   if(is.null(jinstance)) {
     julia <- julia_setup()
-    julia$command("include(x) = Base.include(Main, x)")
+    julia$command("include(x) = Base.include(Main, x)") # hack because include doesnt work with embedded julia
     pkgs <- c("Pkg", "Distributed", "LinearAlgebra", "Statistics", "Distributions", "AltDistributions",
             "DelimitedFiles", "RData", "DataFrames", "CSV", "PolyaGammaDistribution")
-    for(pkg in pkgs) {
-      print(pkg)
-      julia$install_package_if_needed(pkg)
+    if(addpackages){
+      for(pkg in pkgs) {
+        print(pkg)
+        julia$install_package_if_needed(pkg)
+      }
     }
     # create some necessary functions  
     cat("\n", file=paste0(fl, '2'), append=FALSE)
     for(u in runonce) {
       if(debug) print(u)
       cat(u, "\n\n", file=paste0(fl, '2'), append=TRUE)
-      #julia$command(u) # also number of chains -todo move this to higher level control
     }
-    julia$command(paste0("include(\"",fl,"2\")"))
-    # send data to julia
-    #sdat = data_reader(RAW, 1)
     # export commands to workers
     julia$command(paste0("include(\"",fl,"\")"))
     julia$command("addmoreprocs()")
@@ -276,8 +231,7 @@ julia.model <- function(j.code,
   if(verbose) cat(paste(readLines(fl), collapse = "\n"))
   
   # run model on all workers and collect results
-  julia$command(runmodel) 
-  print(julia$command(paste0('r = runmod(',iter+warmup,', ',warmup, ', ', chains,')'))) # run gibbs sampler in Julia
+  julia$command(paste0('r = runmod(gibbs, dat',iter+warmup,', ',warmup, ', ', chains,')')) # run gibbs sampler in Julia
   jres = julia$eval('r') # bring julia results into R as matrix
   res = as.mcmc.list(lapply(jres, function(x) mcmc(x, start=warmup+1, end=iter+warmup)))
   if(cleanafter){
@@ -342,7 +296,7 @@ data_analyst <- function(i,
 #' no modifications are necessary to examine interventions of the type:
 #' "reduce exposure j by p%" - interventions that depend on the observed value
 #' of exposure require that the basis be "identity"
-#' @param ... arguments to stan() or coda.samples() for a Stan or JAGS model, 
+#' @param ... arguments to stan(), coda.samples(), or julia.sample() for a Stan, JAGS, or julia model, 
 #' respectively
 #' @export
 #' @import rstan rjags parallel doParallel foreach JuliaCall
@@ -480,7 +434,8 @@ change basis to "identity", "sd", or "range"')
                    verbose=verbose,
                    jinstance = env$jinstance,
                    cleanafter = FALSE, 
-                   debug=debug
+                   debug=debug,
+                   ...
                   )
     res = resj[['res']]
     env$jinstance = resj[['jinstance']]

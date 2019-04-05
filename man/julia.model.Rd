@@ -6,7 +6,7 @@
 \usage{
 julia.model(j.code, iter, warmup, chains, sdat = sdat, fl = tempfile(),
   jinstance = NULL, cleanafter = FALSE, verbose = TRUE,
-  debug = FALSE)
+  debug = FALSE, addpackages = TRUE)
 }
 \arguments{
 \item{j.code}{name of a character string with a stan model}

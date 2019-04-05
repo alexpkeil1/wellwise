@@ -56,7 +56,7 @@ no modifications are necessary to examine interventions of the type:
 "reduce exposure j by p%" - interventions that depend on the observed value
 of exposure require that the basis be "identity"}
 
-\item{...}{arguments to stan() or coda.samples() for a Stan or JAGS model, 
+\item{...}{arguments to stan(), coda.samples(), or julia.sample() for a Stan, JAGS, or julia model, 
 respectively}
 }
 \description{
