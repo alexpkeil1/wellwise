@@ -5,7 +5,8 @@
 \title{User level function to run multiple simulation iterations}
 \usage{
 analysis_wrapper(simiters, rawdata, dir = "~/temp/", root = "",
-  debug = FALSE, verbose = FALSE, type = "stan", stanfit = NA, ...)
+  debug = FALSE, verbose = FALSE, type = "stan", stanfit = NA,
+  juliabin = NULL, ...)
 }
 \arguments{
 \item{simiters}{e.g. 1:2}
@@ -25,6 +26,10 @@ analysis_wrapper(simiters, rawdata, dir = "~/temp/", root = "",
 \item{stanfit}{NA or name of object containing a fitted stan model (re-uses
 the compiled stan model, which will be efficient for restarting iterations after
 checking first one(s) for diagnostics}
+
+\item{juliabin}{NULL or path to directory containing the julia binary file
+e.g. /Applications/Julia-1.1.app/Contents/Resources/julia/bin/ on mac
+C:/Users/<username>]/AppData/Local/Julia-1.1.0/bin/ on windows 10}
 
 \item{...}{arguments to data analyst}
 }

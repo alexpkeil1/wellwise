@@ -2,15 +2,17 @@
 #######################
 # functions
 #######################
-data_importer <- function(package=NULL, ...){
+data_importer <- function(package=NULL, fast=TRUE,...){
 #' @title bring in raw well data
 #' 
 #' @description bring in raw well data from github or R package
 #' 
 #' @details lorem ipsum
 #' @param package import data from a specific package (NULL or 'wellwise')
+#' @param fast logical, if TRUE (default), downloads a smaller data set for faster testing. 
+#' If FALSE, downloads more realistic data for use in simulations.
 #' @param ... ipsum
-#' @importFrom utils data read.csv
+#' @importFrom utils data read.csv download.file
 #' @export
 #' @examples
 #' runif(1)
@@ -21,9 +23,13 @@ data_importer <- function(package=NULL, ...){
   if(is.null(package)){
     cat("Reading in data from github\n")
     cat("try data_importer(package='wellwise') to speed this up substantially!\n")
-    #e$welldata <- read_csv("https://cirl-unc.github.io/wellwater/data/testdata20190403.csv", col_types = cols(.default = col_double()), ...)
-    #e$welldata <- read.csv("https://cirl-unc.github.io/wellwater/data/testdata.csv")
-    #e$welldata <- load("https://cirl-unc.github.io/wellwater/data/welldata.rda")
+    #e$welldata <- read_csv("https://cirl-unc.github.io/wellwater/data/testdata20190404.csv", col_types = cols(.default = col_double()), ...)
+    if(fast) e$welldata <- read.csv("https://cirl-unc.github.io/wellwater/data/testdata.csv")
+    if(!fast) {
+      t = tempfile()
+      download.file("https://cirl-unc.github.io/wellwater/data/welldata.rda", t)
+      e$welldata <- load(t)
+    }
   }
   if(!is.null(package)) {
     cat(paste0("Reading in data from ", package, " package\n"))
@@ -140,7 +146,8 @@ julia.model <- function(j.code,
                        cleanafter=FALSE,
                        verbose=TRUE,
                        debug=FALSE,
-                       addpackages=TRUE
+                       addpackages=TRUE,
+                       juliabin=NULL
                        ){
 #' @title Fit a julia gibbs sampler (given by s.code)
 #' 
@@ -158,6 +165,12 @@ julia.model <- function(j.code,
 #' @param cleanafter should the extra workers be killed after running?
 #' @param verbose print extra stuff 
 #' @param debug print extra debugging info? FALSE
+#' @param addpackages install/reinstall julia packages? TRUE (default) is slower, but should be
+#' done the first time running each model. Afterwards, can be set to FALSE to save
+#' a good chunk of computing time.
+#' @param juliabin NULL or path to directory containing the julia binary file
+#'  e.g. /Applications/Julia-1.1.app/Contents/Resources/julia/bin/ on mac
+#'  C:/Users/<username>]/AppData/Local/Julia-1.1.0/bin/ on windows 10
 #' @import JuliaCall
 #' @importFrom  coda as.mcmc.list mcmc
 #' @export
@@ -166,16 +179,9 @@ julia.model <- function(j.code,
   if(verbose) cat(paste0("Julia code stored in ", fl))
   runonce <- c(
     "using Pkg",
-    ifelse(addpackages, "using Pkg", ""),
      ifelse(addpackages, "Pkg.add(PackageSpec(url = \"https://github.com/alexpkeil1/PolyaGammaDistribution.jl\"))", ""),
      ifelse(addpackages, "Pkg.add(PackageSpec(url=\"https://github.com/alexpkeil1/AltDistributions.jl\"))", ""),
-     ifelse(addpackages, "Pkg.add(PackageSpec(url=\"https://github.com/alexpkeil1/wellwisejl\"))", ""), # offloaded a lot of functionality here
-     paste0(
-     "function addmoreprocs()
-       if(nprocs()<", chains,") # need to run this before anything!
-        addprocs(", chains,"-nprocs())
-        end
-      end")
+     ifelse(addpackages, "Pkg.add(PackageSpec(url=\"https://github.com/alexpkeil1/wellwisejl\"))", "") # offloaded a lot of functionality here
   )
   runworker <- c(
      "using Pkg, Distributed, LinearAlgebra, Statistics, Distributions,
@@ -201,7 +207,8 @@ julia.model <- function(j.code,
   )
   # prelims
   if(is.null(jinstance)) {
-    julia <- julia_setup()
+    if(is.null(juliabin)) julia <- julia_setup()
+    if(is.null(juliabin)) julia <- julia_setup(JULIA_HOME = juliabin)
     julia$command("include(x) = Base.include(Main, x)") # hack because include doesnt work with embedded julia
     pkgs <- c("Pkg", "Distributed", "LinearAlgebra", "Statistics", "Distributions", "AltDistributions",
             "DelimitedFiles", "RData", "DataFrames", "CSV", "PolyaGammaDistribution")
@@ -219,7 +226,7 @@ julia.model <- function(j.code,
     }
     # export commands to workers
     julia$command(paste0("include(\"",fl,"\")"))
-    julia$command("addmoreprocs()")
+    julia$command(paste0("addmoreprocs(", chains, ")"))
     julia$command(paste0("@everywhere include(\"",fl,"\")"))
     } else {
       if(verbose) cat("Utilizing existing instance of julia_setup()")
@@ -231,7 +238,9 @@ julia.model <- function(j.code,
   if(verbose) cat(paste(readLines(fl), collapse = "\n"))
   
   # run model on all workers and collect results
-  julia$command(paste0('r = runmod(gibbs, dat',iter+warmup,', ',warmup, ', ', chains,')')) # run gibbs sampler in Julia
+  jcmd = paste0('r = runmod(gibbs, rdat, ',iter+warmup,', ',warmup, ', ', chains,')')
+  if(verbose) print(paste("running models with '", jcmd, "'"))
+  julia$command(jcmd) # run gibbs sampler in Julia
   jres = julia$eval('r') # bring julia results into R as matrix
   res = as.mcmc.list(lapply(jres, function(x) mcmc(x, start=warmup+1, end=iter+warmup)))
   if(cleanafter){
@@ -261,6 +270,7 @@ data_analyst <- function(i,
                          type=c('stan', 'jags', 'julia'),
                          stanfit=NA,
                          basis = c("identity", "iqr", "sd"),
+                         juliabin=NULL,
                          ...
                 ){
 #' @title Fit a Stan/JAGS model in a single data set
@@ -296,6 +306,9 @@ data_analyst <- function(i,
 #' no modifications are necessary to examine interventions of the type:
 #' "reduce exposure j by p%" - interventions that depend on the observed value
 #' of exposure require that the basis be "identity"
+#' @param juliabin NULL or path to directory containing the julia binary file
+#'  e.g. /Applications/Julia-1.1.app/Contents/Resources/julia/bin/ on mac
+#'  C:/Users/<username>]/AppData/Local/Julia-1.1.0/bin/ on windows 10
 #' @param ... arguments to stan(), coda.samples(), or julia.sample() for a Stan, JAGS, or julia model, 
 #' respectively
 #' @export
@@ -312,6 +325,21 @@ data_analyst <- function(i,
   ch = NULL
   type = type[1]
   ncores = getOption("mc.cores")
+  if(is.null(ncores)){
+    print(paste0('mc.cores option not set, setting to ', chains))
+    options(mc.cores = chains)
+  }
+  if(!is.null(ncores) && ncores< chains){
+    print(paste0('mc.cores option less than number of chains, setting to ', chains))
+    print(paste0(''))
+    options(mc.cores = chains)
+  }
+  if(getOption("mc.cores") > parallel::detectCores()){
+    stop(
+      paste0("wellwise: not enough computer cores to run this simulation in parallel - set chains to ", 
+             parallel::detectCores(), 
+             " or fewer"))
+  }
   if(is.null(s.code) & is.null(s.file)) {
     if(verbose) stop("no stan/jags/julia model given, (specify either s.code or s.file[experimental])")
     #s.code <- get_model('logistic')
@@ -435,6 +463,7 @@ change basis to "identity", "sd", or "range"')
                    jinstance = env$jinstance,
                    cleanafter = FALSE, 
                    debug=debug,
+                   juliabin=juliabin,
                    ...
                   )
     res = resj[['res']]
@@ -474,6 +503,7 @@ analysis_wrapper <- function(simiters,
                              verbose=FALSE,
                              type='stan',
                              stanfit=NA,
+                             juliabin=NULL,
                              ...
                              ){
 #' @title User level function to run multiple simulation iterations
@@ -491,11 +521,14 @@ analysis_wrapper <- function(simiters,
 #' @param stanfit NA or name of object containing a fitted stan model (re-uses
 #' the compiled stan model, which will be efficient for restarting iterations after
 #' checking first one(s) for diagnostics
+#' @param juliabin NULL or path to directory containing the julia binary file
+#'  e.g. /Applications/Julia-1.1.app/Contents/Resources/julia/bin/ on mac
+#'  C:/Users/<username>]/AppData/Local/Julia-1.1.0/bin/ on windows 10
 #' @param ... arguments to data analyst
 #' @export
 #' @examples
 #' runif(1)
-
+  t1 <- Sys.time()
   call = match.call()
   # perform multiple analyses
   if(length(simiters)==1) {
@@ -536,12 +569,14 @@ analysis_wrapper <- function(simiters,
       if(verbose) cat(paste0("Julia code can be seen at ", jfn, "\n"))
       jenv = new.env()
       res[[j]] = data_analyst(i, rawdata, fl=jfn, verbose=verbose, debug=debug, 
-                              type=type, env=jenv, ...)
+                              type=type, env=jenv, juliabin=juliabin, ...)
     }
     j=j+1
   }
   #
   sink.reset()
+  t2 <- Sys.time()
+  print(paste("Run time :", t2-t1, "mins"))
   #close(filenm)
   if(verbose) cat(paste("\nLog in ", filenm))
   class(res) <- 'bgfsimmodlist'
@@ -585,7 +620,7 @@ summary.bgfsimmodlist <- function(
       postmeans[[r]] = sum[idx,1]
     } else{
       divergents[r] = NA
-      sum = coda:::summary.mcmc.list(object[[r]])$statistics
+      sum = summary.mcmc.list(object[[r]])$statistics
       idx = grep('rd', rownames(sum))
       postmeans[[r]] = sum[idx,1]
     }
@@ -651,4 +686,42 @@ plot.bgfsimres <- function(x, type=ifelse(nrow(x$postmeans)>50, "density", "hist
    pbase + geom_histogram(aes_string(fill="parm")) + 
    scale_color_discrete(name="Parameter") + 
    scale_fill_discrete(name="Parameter")
+}
+
+
+
+######### 
+# helpers
+##########
+
+checkjulia <- function(juliabin=NULL){
+  res = try(
+            JuliaCall::julia_setup(JULIA_HOME = juliabin, useRCall=FALSE, force=TRUE, verbose = FALSE),
+            silent = TRUE
+  )
+  if(class(res)=='try-error'){
+    ret = "Julia is not working, try setting 'juliabin' parameter to path containing julia: e.g. C:/Users/<username>/AppData/Local/Julia-1.1.0/bin/ on windows 10"
+  }
+  else ret = "Julia appears to be working"
+  ret
+}
+
+
+summary.mcmc.list <- function (...) 
+{
+#' @name summary.mcmc.list
+#' @title Summary method for mcmc.list object from coda package
+#' 
+#' @description This function was taken directly from the `coda` package. Not
+#' exported in that package.
+#' 
+#' @details lorem ipsum
+#' @param ... arguments to coda:::summary.mcmc.list (object, quantiles=c(.025, .25, .5, .75, .975))
+#' @importFrom utils getFromNamespace
+#' @method summary mcmc.list
+#' @export
+#' @examples
+#' runif(1)
+  fun = getFromNamespace("summary.mcmc.list", "coda")
+  fun(...)
 }
