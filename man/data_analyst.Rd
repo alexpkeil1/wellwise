@@ -8,7 +8,7 @@ data_analyst(i, raw = raw, fl = "~/temp.csv", s.code = NULL,
   s.file = NULL, iter = 2500, warmup = 500, chains = 4, p = NULL,
   dx = NULL, N = NULL, env = NULL, verbose = FALSE,
   debug = FALSE, type = c("stan", "jags", "julia"), stanfit = NA,
-  basis = c("identity", "iqr", "sd"), ...)
+  basis = c("identity", "iqr", "sd"), juliabin = NULL, ...)
 }
 \arguments{
 \item{i}{iteration in simulated data}
@@ -55,6 +55,10 @@ to these transformations, so they change the strength of the priors, but
 no modifications are necessary to examine interventions of the type:
 "reduce exposure j by p%" - interventions that depend on the observed value
 of exposure require that the basis be "identity"}
+
+\item{juliabin}{NULL or path to directory containing the julia binary file
+e.g. /Applications/Julia-1.1.app/Contents/Resources/julia/bin/ on mac
+C:/Users/<username>]/AppData/Local/Julia-1.1.0/bin/ on windows 10}
 
 \item{...}{arguments to stan(), coda.samples(), or julia.sample() for a Stan, JAGS, or julia model, 
 respectively}

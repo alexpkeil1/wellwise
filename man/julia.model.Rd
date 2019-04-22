@@ -6,7 +6,7 @@
 \usage{
 julia.model(j.code, iter, warmup, chains, sdat = sdat, fl = tempfile(),
   jinstance = NULL, cleanafter = FALSE, verbose = TRUE,
-  debug = FALSE, addpackages = TRUE)
+  debug = FALSE, addpackages = TRUE, juliabin = NULL)
 }
 \arguments{
 \item{j.code}{name of a character string with a stan model}
@@ -29,6 +29,14 @@ for adaptation of MCMC parameters/burnin}
 \item{verbose}{print extra stuff}
 
 \item{debug}{print extra debugging info? FALSE}
+
+\item{addpackages}{install/reinstall julia packages? TRUE (default) is slower, but should be
+done the first time running each model. Afterwards, can be set to FALSE to save
+a good chunk of computing time.}
+
+\item{juliabin}{NULL or path to directory containing the julia binary file
+e.g. /Applications/Julia-1.1.app/Contents/Resources/julia/bin/ on mac
+C:/Users/<username>]/AppData/Local/Julia-1.1.0/bin/ on windows 10}
 }
 \description{
 Fit a julia model to a single data set
