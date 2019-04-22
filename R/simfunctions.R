@@ -207,7 +207,7 @@ julia.model <- function(j.code,
   # prelims
   if(is.null(jinstance)) {
     if(is.null(juliabin)) julia <- julia_setup()
-    if(is.null(juliabin)) julia <- julia_setup(JULIA_HOME = juliabin)
+    if(!is.null(juliabin)) julia <- julia_setup(JULIA_HOME = juliabin)
     julia$command("include(x) = Base.include(Main, x)") # hack because include doesnt work with embedded julia
     pkgs <- c("Pkg", "Distributed", "LinearAlgebra", "Statistics", "Distributions",
              "DataFrames")
