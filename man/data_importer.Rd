@@ -4,10 +4,13 @@
 \alias{data_importer}
 \title{bring in raw well data}
 \usage{
-data_importer(package = NULL, ...)
+data_importer(package = NULL, fast = TRUE, ...)
 }
 \arguments{
 \item{package}{import data from a specific package (NULL or 'wellwise')}
+
+\item{fast}{logical, if TRUE (default), downloads a smaller data set for faster testing. 
+If FALSE, downloads more realistic data for use in simulations.}
 
 \item{...}{ipsum}
 }
