@@ -224,6 +224,7 @@ julia.model <- function(j.code,
       cat(u, "\n\n", file=normalizePath(paste0(fl, '2')), append=TRUE)
     }
     # export commands to workers, this requires slightly different path naming on windows
+    #  due to order of evaluation vs. escaping
     julia$command(paste0("include(\"",normalizePath(fl, winslash = "/"),"\")"))
     julia$command(paste0("addmoreprocs(", chains, ")"))
     julia$command(paste0("@everywhere include(\"",normalizePath(fl, winslash = "/"),"\")"))
@@ -234,7 +235,7 @@ julia.model <- function(j.code,
   # read in data
   julia$assign("rdat", data.frame(cbind(y=sdat$y, sdat$X)))
 
-  if(verbose) cat(paste(readLines(fl), collapse = "\n"))
+  if(verbose) cat(paste(readLines(normalizePath(fl)), collapse = "\n"))
   
   # run model on all workers and collect results
   jcmd = paste0('r = runmod(gibbs, rdat, ',iter+warmup,', ',warmup, ', ', chains,')')
