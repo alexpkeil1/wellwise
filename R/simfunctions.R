@@ -564,7 +564,7 @@ analysis_wrapper <- function(simiters,
     joiner = ";";#.Platform$path.sep
       un = Sys.info()["user"]
       jpath = c(jpath,
-        normalizePath(file.path("C:/Users/", un, "/AppData/Local/Julia-1.1.0/bin/")),
+        normalizePath(file.path("C:/Users/", un, "/AppData/Local/Julia-1.1.0/bin/"))
       )
     }
     if(Sys.getenv("JULIA_HOME") != ""){
@@ -724,10 +724,10 @@ checkjulia <- function(juliabin=NULL){
     jhome = Sys.getenv("JULIA_HOME")
     jpath = Sys.getenv("PATH")
     if(tolower(substr(curr, 1, 3))=="win"){
-    joiner = ";";#.Platform$path.sep
+      joiner = ";";#.Platform$path.sep
       un = Sys.info()["user"]
       jpath = c(jpath,
-        normalizePath(file.path("C:/Users/", un, "/AppData/Local/Julia-1.1.0/bin/")),
+        normalizePath(file.path("C:/Users/", un, "/AppData/Local/Julia-1.1.0/bin/"))
       )
     }
     if(Sys.getenv("JULIA_HOME") != ""){
