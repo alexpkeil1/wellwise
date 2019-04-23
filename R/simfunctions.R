@@ -218,7 +218,7 @@ julia.model <- function(j.code,
       }
     }
     # create some necessary functions  
-    cat("\n", file=normalizePath(paste0(fl, '2')), append=FALSE)
+    cat("\n", file=normalizePath(paste0(fl, '2'), mustWork = FALSE), append=FALSE)
     for(u in runonce) {
       if(debug) print(u)
       cat(u, "\n\n", file=normalizePath(paste0(fl, '2')), append=TRUE)

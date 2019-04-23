@@ -26,4 +26,7 @@
     allres = do.call(c, list(res, res2))
     attributes(allres) <- attributes(res)
        
-wellwise v0.5.24
+
+
+
+wellwise v0.5.25
