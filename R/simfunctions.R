@@ -554,12 +554,12 @@ analysis_wrapper <- function(simiters,
   cat(paste0("Analyzing ", length(sq), " iterations of data\n"))
   if(type == 'julia'){
     # pathnames must be explicit for julia on windows
-    curr = Sys.getenv("os")
-    if(substr(curr, 1, 3)=="Win"){
+    curr = Sys.info()["sysname"]
+    if(tolower(substr(curr, 1, 3))=="win"){
       un = Sys.info()["user"]
       jpath = normalizePath(paste0("C:/Users/",un,"/AppData/Local/Julia-1.1.0/bin/"))
-      Sys.setenv(JULIA_HOME=jpath)
-      Sys.setenv(PATH=paste0("%PATH%;",jpath))
+      Sys.setenv(JULIA_HOME=paste0(Sys.getenv("JULIA_HOME"),";",jpath))
+      Sys.setenv(PATH=paste0(Sys.getenv("PATH"),";",jpath))
     } else jpath=NULL      
   }
   for(i in sq){
@@ -706,6 +706,14 @@ plot.bgfsimres <- function(x, type=ifelse(nrow(x$postmeans)>50, "density", "hist
 ##########
 
 checkjulia <- function(juliabin=NULL){
+    curr = Sys.info()["sysname"]
+    if(tolower(substr(curr, 1, 3))=="win"){
+      un = Sys.info()["user"]
+      jpath = normalizePath(paste0("C:/Users/",un,"/AppData/Local/Julia-1.1.0/bin/"))
+      Sys.setenv(JULIA_HOME=jpath)
+      Sys.setenv(PATH=paste0("%PATH%;",jpath))
+    } else jpath=NULL      
+
   res = try(
             JuliaCall::julia_setup(JULIA_HOME = juliabin, useRCall=FALSE, force=TRUE, verbose = FALSE),
             silent = TRUE

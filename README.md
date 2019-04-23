@@ -27,6 +27,4 @@
     attributes(allres) <- attributes(res)
        
 
-
-
-wellwise v0.5.21
+wellwise v0.5.23
