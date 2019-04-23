@@ -525,6 +525,7 @@ analysis_wrapper <- function(simiters,
 #'  e.g. /Applications/Julia-1.1.app/Contents/Resources/julia/bin/ on mac
 #'  C:/Users/<username>]/AppData/Local/Julia-1.1.0/bin/ on windows 10
 #' @param ... arguments to data analyst
+#' @importFrom utils write.csv
 #' @export
 #' @examples
 #' runif(1)
@@ -538,8 +539,8 @@ analysis_wrapper <- function(simiters,
     sq = simiters
   }
   #mf = match(c("fl"), names(call))
-  dir = normalizePath(paste0(path.expand(dir), "/"), mustWork=TRUE)
-  outfile = normalizePath(paste0(dir, "/", root, "_res.csv"))
+  dir = normalizePath(path.expand(dir), mustWork=TRUE)
+  outfile = normalizePath(file.path(dir, paste0(root, "_res.csv")), mustWork=FALSE)
   if(debug & type=='stan'){
     outfile = "samples.csv"
     cat(paste0("Outputting samples from stan to ", outfile))
@@ -557,7 +558,7 @@ analysis_wrapper <- function(simiters,
     curr = Sys.info()["sysname"]
     if(tolower(substr(curr, 1, 3))=="win"){
       un = Sys.info()["user"]
-      jpath = normalizePath(paste0("C:/Users/",un,"/AppData/Local/Julia-1.1.0/bin/"))
+      jpath = normalizePath(file.path("C:/Users/", un, "/AppData/Local/Julia-1.1.0/bin/"))
       Sys.setenv(JULIA_HOME=paste0(Sys.getenv("JULIA_HOME"),";",jpath))
       Sys.setenv(PATH=paste0(Sys.getenv("PATH"),";",jpath))
     } else jpath=NULL      
@@ -575,7 +576,7 @@ analysis_wrapper <- function(simiters,
                               type=type, ...)
     }
     if(type == 'julia'){
-      jfn = normalizePath(paste0(dir, "/", root, "_jcode.txt"))
+      jfn = normalizePath(file.path(dir, paste0(root, "_jcode.txt")), mustWork=FALSE)
       if(verbose) cat(paste0("Julia code can be seen at ", jfn, "\n"))
       jenv = new.env()
       res[[j]] = data_analyst(i, rawdata, fl=jfn, verbose=verbose, debug=debug, 
