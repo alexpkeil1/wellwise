@@ -556,12 +556,23 @@ analysis_wrapper <- function(simiters,
   if(type == 'julia'){
     # pathnames must be explicit for julia on windows
     curr = Sys.info()["sysname"]
+    joiner = ":";#.Platform$path.sep
+    jpath = normalizePath(dirname(Sys.which("julia")))
+    jhome = Sys.getenv("JULIA_HOME")
+    path = Sys.getenv("PATH")
     if(tolower(substr(curr, 1, 3))=="win"){
+    joiner = ";";#.Platform$path.sep
       un = Sys.info()["user"]
-      jpath = normalizePath(file.path("C:/Users/", un, "/AppData/Local/Julia-1.1.0/bin/"))
-      Sys.setenv(JULIA_HOME=paste0(Sys.getenv("JULIA_HOME"),";",jpath))
-      Sys.setenv(PATH=paste0(Sys.getenv("PATH"),";",jpath))
-    } else jpath=NULL      
+      jpath = c(jpath,
+        normalizePath(file.path("C:/Users/", un, "/AppData/Local/Julia-1.1.0/bin/"))
+      )
+    }
+    if(Sys.getenv("JULIA_HOME") != ""){
+      Sys.setenv(JULIA_HOME=paste0(c(jpath,jhome), collapse=joiner))
+      }else Sys.setenv(JULIA_HOME=paste0(jpath, collapse=joiner))
+    if(Sys.getenv("PATH") != ""){
+      Sys.setenv(      PATH=paste0(c(jpath,path), collapse=joiner))
+    }else Sys.setenv(PATH=paste0(jpath, collapse=joiner))
   }
   for(i in sq){
     cat(".")
@@ -708,13 +719,23 @@ plot.bgfsimres <- function(x, type=ifelse(nrow(x$postmeans)>50, "density", "hist
 
 checkjulia <- function(juliabin=NULL){
     curr = Sys.info()["sysname"]
+    joiner = ":";#.Platform$path.sep
+    jpath = normalizePath(dirname(Sys.which("julia")))
+    jhome = Sys.getenv("JULIA_HOME")
+    jpath = Sys.getenv("PATH")
     if(tolower(substr(curr, 1, 3))=="win"){
+      joiner = ";";#.Platform$path.sep
       un = Sys.info()["user"]
-      jpath = normalizePath(paste0("C:/Users/",un,"/AppData/Local/Julia-1.1.0/bin/"))
-      Sys.setenv(JULIA_HOME=jpath)
-      Sys.setenv(PATH=paste0("%PATH%;",jpath))
-    } else jpath=NULL      
-
+      jpath = c(jpath,
+        normalizePath(file.path("C:/Users/", un, "/AppData/Local/Julia-1.1.0/bin/"))
+      )
+    }
+    if(Sys.getenv("JULIA_HOME") != ""){
+      Sys.setenv(      JULIA_HOME=paste0(c(jpath,jhome), collapse=joiner))
+      }else Sys.setenv(JULIA_HOME=paste0(jpath, collapse=joiner))
+    if(Sys.getenv("PATH") != ""){
+      Sys.setenv(    PATH=paste0(c(jpath,jpath), collapse=joiner))
+    }else Sys.setenv(PATH=paste0(jpath, collapse=joiner))
   res = try(
             JuliaCall::julia_setup(JULIA_HOME = juliabin, useRCall=FALSE, force=TRUE, verbose = FALSE),
             silent = TRUE
