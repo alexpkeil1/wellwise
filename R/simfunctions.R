@@ -224,6 +224,7 @@ julia.model <- function(j.code,
       cat(u, "\n\n", file=normalizePath(paste0(fl, '2')), append=TRUE)
     }
     # export commands to workers, this requires slightly different path naming on windows
+    #  due to order of evaluation vs. escaping
     julia$command(paste0("include(\"",normalizePath(fl, winslash = "/"),"\")"))
     julia$command(paste0("addmoreprocs(", chains, ")"))
     julia$command(paste0("@everywhere include(\"",normalizePath(fl, winslash = "/"),"\")"))
@@ -234,7 +235,7 @@ julia.model <- function(j.code,
   # read in data
   julia$assign("rdat", data.frame(cbind(y=sdat$y, sdat$X)))
 
-  if(verbose) cat(paste(readLines(fl), collapse = "\n"))
+  if(verbose) cat(paste(readLines(normalizePath(fl)), collapse = "\n"))
   
   # run model on all workers and collect results
   jcmd = paste0('r = runmod(gibbs, rdat, ',iter+warmup,', ',warmup, ', ', chains,')')
@@ -524,6 +525,7 @@ analysis_wrapper <- function(simiters,
 #'  e.g. /Applications/Julia-1.1.app/Contents/Resources/julia/bin/ on mac
 #'  C:/Users/<username>]/AppData/Local/Julia-1.1.0/bin/ on windows 10
 #' @param ... arguments to data analyst
+#' @importFrom utils write.csv
 #' @export
 #' @examples
 #' runif(1)
@@ -537,8 +539,8 @@ analysis_wrapper <- function(simiters,
     sq = simiters
   }
   #mf = match(c("fl"), names(call))
-  dir = normalizePath(paste0(path.expand(dir), "/"), mustWork=TRUE)
-  outfile = normalizePath(paste0(dir, root, "_res.csv"))
+  dir = normalizePath(path.expand(dir), mustWork=TRUE)
+  outfile = normalizePath(file.path(dir, paste0(root, "_res.csv")), mustWork=FALSE)
   if(debug & type=='stan'){
     outfile = "samples.csv"
     cat(paste0("Outputting samples from stan to ", outfile))
@@ -551,6 +553,16 @@ analysis_wrapper <- function(simiters,
   if(!debug) sink(filenm, split = FALSE, type = c("output", "message"))
   if(debug) sink(filenm, split = TRUE, type = c("output", "message"))
   cat(paste0("Analyzing ", length(sq), " iterations of data\n"))
+  if(type == 'julia'){
+    # pathnames must be explicit for julia on windows
+    curr = Sys.info()["sysname"]
+    if(tolower(substr(curr, 1, 3))=="win"){
+      un = Sys.info()["user"]
+      jpath = normalizePath(file.path("C:/Users/", un, "/AppData/Local/Julia-1.1.0/bin/"))
+      Sys.setenv(JULIA_HOME=paste0(Sys.getenv("JULIA_HOME"),";",jpath))
+      Sys.setenv(PATH=paste0(Sys.getenv("PATH"),";",jpath))
+    } else jpath=NULL      
+  }
   for(i in sq){
     cat(".")
     if(type=='stan'){
@@ -564,11 +576,12 @@ analysis_wrapper <- function(simiters,
                               type=type, ...)
     }
     if(type == 'julia'){
-      jfn = normalizePath(paste0(dir, root, "_jcode.txt"))
+      jfn = normalizePath(file.path(dir, paste0(root, "_jcode.txt")), mustWork=FALSE)
       if(verbose) cat(paste0("Julia code can be seen at ", jfn, "\n"))
       jenv = new.env()
       res[[j]] = data_analyst(i, rawdata, fl=jfn, verbose=verbose, debug=debug, 
                               type=type, env=jenv, juliabin=juliabin, ...)
+      write.csv(do.call("rbind", res[[j]]), outfile)
     }
     j=j+1
   }
@@ -694,6 +707,14 @@ plot.bgfsimres <- function(x, type=ifelse(nrow(x$postmeans)>50, "density", "hist
 ##########
 
 checkjulia <- function(juliabin=NULL){
+    curr = Sys.info()["sysname"]
+    if(tolower(substr(curr, 1, 3))=="win"){
+      un = Sys.info()["user"]
+      jpath = normalizePath(paste0("C:/Users/",un,"/AppData/Local/Julia-1.1.0/bin/"))
+      Sys.setenv(JULIA_HOME=jpath)
+      Sys.setenv(PATH=paste0("%PATH%;",jpath))
+    } else jpath=NULL      
+
   res = try(
             JuliaCall::julia_setup(JULIA_HOME = juliabin, useRCall=FALSE, force=TRUE, verbose = FALSE),
             silent = TRUE
