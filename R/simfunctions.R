@@ -718,34 +718,51 @@ plot.bgfsimres <- function(x, type=ifelse(nrow(x$postmeans)>50, "density", "hist
 ##########
 
 checkjulia <- function(juliabin=NULL){
-    curr = Sys.info()["sysname"]
-    joiner = ":";#.Platform$path.sep
-    jpath = normalizePath(dirname(Sys.which("julia")))
-    jhome = Sys.getenv("JULIA_HOME")
-    path = Sys.getenv("PATH")
-    if(tolower(substr(curr, 1, 3))=="win"){
-      joiner = ";";#.Platform$path.sep
-      un = Sys.info()["user"]
-      jpath = c(jpath,
-        normalizePath(file.path("C:/Users/", un, "/AppData/Local/Julia-1.1.0/bin/"))
-      )
-    }
-    if(Sys.getenv("JULIA_HOME") != ""){
-      Sys.setenv(      JULIA_HOME=paste0(c(jpath,jhome), collapse=joiner))
-      }else Sys.setenv(JULIA_HOME=paste0(jpath, collapse=joiner))
-    if(Sys.getenv("PATH") != ""){
-      Sys.setenv(    PATH=paste0(c(jpath,path), collapse=joiner))
-    }else Sys.setenv(PATH=paste0(jpath, collapse=joiner))
-  res = try(
-            JuliaCall::julia_setup(JULIA_HOME = juliabin, useRCall=FALSE, force=TRUE, verbose = FALSE),
-            silent = TRUE
-  )
-  if(class(res)=='try-error'){
-    ret = "Julia is not working, try setting 'juliabin' parameter to path containing julia: e.g. C:/Users/<username>/AppData/Local/Julia-1.1.0/bin/ on windows 10"
+  curr = Sys.info()["sysname"]
+  joiner = ":"
+  jpath = ""
+  if(!is.null(juliabin)){
+    jpath = c(jpath, normalizePath(juliabin))
   }
-  else ret = "Julia appears to be working"
+  if(Sys.which("julia") != ""){
+    np = normalizePath(dirname(Sys.which("julia")))
+    jpath = c(jpath, np)
+  }
+  jhome = Sys.getenv("JULIA_HOME")
+  path = Sys.getenv("PATH")
+  jpath = jpath[jpath!=""]
+  if (tolower(substr(curr, 1, 3)) == "win") {
+    joiner = ";"
+    un = Sys.info()["user"]
+    paths = c("/AppData/Local/Julia-0.7.0/bin/",
+              "/AppData/Local/Julia-1.0.0/bin/",
+              "/AppData/Local/Julia-1.0.1/bin/",
+              "/AppData/Local/Julia-1.0.2/bin/",
+              "/AppData/Local/Julia-1.1.0/bin/")
+    for(pth in paths){
+      jpath = suppressWarnings(c(jpath, normalizePath(file.path("C:/Users/", 
+                                                                un, pth))))
+    }
+  }
+  if (Sys.getenv("JULIA_HOME") != "") {
+    Sys.setenv(JULIA_HOME = paste0(c(jpath, jhome), collapse = joiner))
+  }else Sys.setenv(JULIA_HOME = paste0(jpath, collapse = joiner))
+  if (Sys.getenv("PATH") != "") {
+    Sys.setenv(PATH = paste0(c(jpath, path), collapse = joiner))
+  }else Sys.setenv(PATH = paste0(jpath, collapse = joiner))
+  for(j in jpath){
+    jp = suppressWarnings(JuliaCall:::julia_locate(j))
+    if(!is.null(jp)) break
+  }
+  
+  res = try(JuliaCall::julia_setup(JULIA_HOME = jp, useRCall = FALSE, 
+                                   force = TRUE, verbose = FALSE), silent = TRUE)
+  if (class(res) == "try-error") {
+    ret = "Julia is not working, try setting 'juliabin' parameter to path containing julia: e.g. C:/Users/<username>/AppData/Local/Julia-1.1.0/bin/ on windows 10"
+  }else ret = "Julia appears to be working"
   ret
 }
+
 
 
 summary.mcmc.list <- function (...) 
