@@ -47,7 +47,7 @@ transformed parameters{
   vector[p] beta;
   {
    vector[p] lambda_t;
-   lambda_t = sqrt( Csq * lambda ) ./ sqrt( Csq + tau * lambda .* lambda );
+   lambda_t = sqrt( Csq * lambda .* lambda ) ./ sqrt( Csq + tau * tau * lambda .* lambda );
    beta = tau * lambda_t .* b_;
   }
 }
@@ -65,7 +65,7 @@ model{
     real s2 = 1;
     tau ~ student_t(1., 0, 1);
     lambda ~ student_t(1., 0, 1);
-    // regulazation factor prior
+    // regulization factor prior
     Csq ~ inv_gamma(k/2, k*s2/2); // translates to student_t with k d.f., scale=sqrt(s2) for coefs far from zero
   }
   mu = beta0 + beta[1]*cen_Arsenic + beta[2]*cen_Manganese + beta[3]*cen_Lead +
