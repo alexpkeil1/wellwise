@@ -722,7 +722,7 @@ checkjulia <- function(juliabin=NULL){
     joiner = ":";#.Platform$path.sep
     jpath = normalizePath(dirname(Sys.which("julia")))
     jhome = Sys.getenv("JULIA_HOME")
-    jpath = Sys.getenv("PATH")
+    path = Sys.getenv("PATH")
     if(tolower(substr(curr, 1, 3))=="win"){
       joiner = ";";#.Platform$path.sep
       un = Sys.info()["user"]
@@ -734,7 +734,7 @@ checkjulia <- function(juliabin=NULL){
       Sys.setenv(      JULIA_HOME=paste0(c(jpath,jhome), collapse=joiner))
       }else Sys.setenv(JULIA_HOME=paste0(jpath, collapse=joiner))
     if(Sys.getenv("PATH") != ""){
-      Sys.setenv(    PATH=paste0(c(jpath,jpath), collapse=joiner))
+      Sys.setenv(    PATH=paste0(c(jpath,path), collapse=joiner))
     }else Sys.setenv(PATH=paste0(jpath, collapse=joiner))
   res = try(
             JuliaCall::julia_setup(JULIA_HOME = juliabin, useRCall=FALSE, force=TRUE, verbose = FALSE),
