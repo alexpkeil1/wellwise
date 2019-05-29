@@ -555,25 +555,7 @@ analysis_wrapper <- function(simiters,
   if(debug) sink(filenm, split = TRUE, type = c("output", "message"))
   cat(paste0("Analyzing ", length(sq), " iterations of data\n"))
   if(type == 'julia'){
-    # pathnames must be explicit for julia on windows
-    curr = Sys.info()["sysname"]
-    joiner = ":";#.Platform$path.sep
-    jpath = normalizePath(dirname(Sys.which("julia")))
-    jhome = Sys.getenv("JULIA_HOME")
-    path = Sys.getenv("PATH")
-    if(tolower(substr(curr, 1, 3))=="win"){
-    joiner = ";";#.Platform$path.sep
-      un = Sys.info()["user"]
-      jpath = c(jpath,
-        normalizePath(file.path("C:/Users/", un, "/AppData/Local/Julia-1.1.0/bin/"))
-      )
-    }
-    if(Sys.getenv("JULIA_HOME") != ""){
-      Sys.setenv(JULIA_HOME=paste0(c(jpath,jhome), collapse=joiner))
-      }else Sys.setenv(JULIA_HOME=paste0(jpath, collapse=joiner))
-    if(Sys.getenv("PATH") != ""){
-      Sys.setenv(      PATH=paste0(c(jpath,path), collapse=joiner))
-    }else Sys.setenv(        PATH=paste0(jpath, collapse=joiner))
+    checkjulia()
   }
   for(i in sq){
     cat(".")
@@ -752,7 +734,8 @@ checkjulia <- function(juliabin=NULL){
     Sys.setenv(PATH = paste0(c(jpath, path), collapse = joiner))
   }else Sys.setenv(PATH = paste0(jpath, collapse = joiner))
   for(j in jpath){
-    jp = suppressWarnings(JuliaCall:::julia_locate(j))
+    options("JULIA_HOME"=j)
+    jp = suppressWarnings(JuliaCall:::julia_locate())
     if(!is.null(jp)) break
   }
   
