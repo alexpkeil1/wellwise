@@ -207,7 +207,7 @@ julia.model <- function(j.code,
   # prelims
   if(is.null(jinstance)) {
     if(is.null(juliabin)) julia <- julia_setup()
-    if(is.null(juliabin)) julia <- julia_setup(JULIA_HOME = juliabin)
+    if(!is.null(juliabin)) julia <- julia_setup(JULIA_HOME = juliabin)
     julia$command("include(x) = Base.include(Main, x)") # hack because include doesnt work with embedded julia
     pkgs <- c("Pkg", "Distributed", "LinearAlgebra", "Statistics", "Distributions",
              "DataFrames")
@@ -232,6 +232,7 @@ julia.model <- function(j.code,
       if(verbose) cat("Utilizing existing instance of julia_setup()")
       julia <- jinstance
     }
+  # todo: have a spot that calls the "runonce" code
   # read in data
   julia$assign("rdat", data.frame(cbind(y=sdat$y, sdat$X)))
 
@@ -572,7 +573,7 @@ analysis_wrapper <- function(simiters,
       }else Sys.setenv(JULIA_HOME=paste0(jpath, collapse=joiner))
     if(Sys.getenv("PATH") != ""){
       Sys.setenv(      PATH=paste0(c(jpath,path), collapse=joiner))
-    }else Sys.setenv(PATH=paste0(jpath, collapse=joiner))
+    }else Sys.setenv(        PATH=paste0(jpath, collapse=joiner))
   }
   for(i in sq){
     cat(".")
@@ -738,10 +739,10 @@ checkjulia <- function(juliabin=NULL){
               "/AppData/Local/Julia-1.0.0/bin/",
               "/AppData/Local/Julia-1.0.1/bin/",
               "/AppData/Local/Julia-1.0.2/bin/",
+              "/AppData/Local/Julia-1.0.3/bin/",
               "/AppData/Local/Julia-1.1.0/bin/")
-    for(pth in paths){
-      jpath = suppressWarnings(c(jpath, normalizePath(file.path("C:/Users/", 
-                                                                un, pth))))
+    for(pth in rev(paths)){
+      jpath = suppressWarnings(c(jpath, normalizePath(file.path("C:/Users/", un, pth))))
     }
   }
   if (Sys.getenv("JULIA_HOME") != "") {
