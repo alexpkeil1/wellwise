@@ -225,6 +225,7 @@ julia.model <- function(j.code,
     }
     # export commands to workers, this requires slightly different path naming on windows
     #  due to order of evaluation vs. escaping
+    julia$command(paste0("include(\"",normalizePath(paste0(fl, '2'), winslash = "/"),"\")"))
     julia$command(paste0("include(\"",normalizePath(fl, winslash = "/"),"\")"))
     julia$command(paste0("addmoreprocs(", chains, ")"))
     julia$command(paste0("@everywhere include(\"",normalizePath(fl, winslash = "/"),"\")"))
