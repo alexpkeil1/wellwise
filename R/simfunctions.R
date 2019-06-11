@@ -178,10 +178,7 @@ julia.model <- function(j.code,
   print(call)
   if(verbose) cat(paste0("Julia code stored in ", fl))
   runonce <- c(
-    "using Pkg",
-     ifelse(addpackages, "Pkg.add(PackageSpec(url = \"https://github.com/alexpkeil1/PolyaGammaDistribution.jl\"))", ""),
-     ifelse(addpackages, "Pkg.add(PackageSpec(url=\"https://github.com/alexpkeil1/AltDistributions.jl\"))", ""),
-     ifelse(addpackages, "Pkg.add(PackageSpec(url=\"https://github.com/alexpkeil1/wellwisejl\"))", "") # offloaded a lot of functionality here
+    "print(\"Testing wellwisejl\")"
   )
   runworker <- c(
      "using Pkg, Distributed, LinearAlgebra, Statistics, Distributions,
@@ -211,10 +208,18 @@ julia.model <- function(j.code,
     julia$command("include(x) = Base.include(Main, x)") # hack because include doesnt work with embedded julia
     pkgs <- c("Pkg", "Distributed", "LinearAlgebra", "Statistics", "Distributions",
              "DataFrames")
+    pkgs2 <- c("https://github.com/alexpkeil1/wellwisejl",
+               "https://github.com/alexpkeil1/PolyaGammaDistribution.jl", 
+             "https://github.com/alexpkeil1/AltDistributions.jl"
+             )
     if(addpackages){
       for(pkg in pkgs) {
         print(pkg)
         julia$install_package_if_needed(pkg)
+      }
+      for(pkg in pkgs2) {
+        print(pkg)
+        julia$install_package(pkg)
       }
     }
     # create some necessary functions  
@@ -223,9 +228,11 @@ julia.model <- function(j.code,
       if(debug) print(u)
       cat(u, "\n\n", file=normalizePath(paste0(fl, '2')), append=TRUE)
     }
+    #  call the "runonce" code
+    julia_source(normalizePath(paste0(fl, '2'), winslash = "/"))
+    #julia$command(paste0("include(\"",normalizePath(fl, winslash = "/"),"2\")"))
     # export commands to workers, this requires slightly different path naming on windows
     #  due to order of evaluation vs. escaping
-    julia$command(paste0("include(\"",normalizePath(paste0(fl, '2'), winslash = "/"),"\")"))
     julia$command(paste0("include(\"",normalizePath(fl, winslash = "/"),"\")"))
     julia$command(paste0("addmoreprocs(", chains, ")"))
     julia$command(paste0("@everywhere include(\"",normalizePath(fl, winslash = "/"),"\")"))
@@ -233,7 +240,6 @@ julia.model <- function(j.code,
       if(verbose) cat("Utilizing existing instance of julia_setup()")
       julia <- jinstance
     }
-  # todo: have a spot that calls the "runonce" code
   # read in data
   julia$assign("rdat", data.frame(cbind(y=sdat$y, sdat$X)))
 
